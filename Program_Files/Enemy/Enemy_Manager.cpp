@@ -90,6 +90,17 @@ void Enemy_Manager::Spawn(EnemyType type, const DirectX::XMFLOAT3& spawnPos)
     }
 }
 
+int Enemy_Manager::Get_Active_Enemy_Count() const
+{
+    int count = 0;
+
+    for (const auto& enemy : m_EnemyPool)
+    {
+        if (enemy->IsActive()) count++;
+    }
+    return count;
+}
+
 Enemy* Enemy_Manager::Check_Collision_AABB(const AABB& box)
 {
     for (Enemy* e : m_ActiveList)

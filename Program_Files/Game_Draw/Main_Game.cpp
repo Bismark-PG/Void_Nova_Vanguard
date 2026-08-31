@@ -9,7 +9,6 @@
 #include "Main_Game.h"
 #include "Grid.h"
 #include "Cube.h"
-#include "Shader_Manager.h" 
 #include "Player.h"
 #include "Player_Camera.h"
 #include "Light_Manager.h"
@@ -20,6 +19,7 @@
 #include "Bullet_Manager.h"
 #include "Particle_Manager.h"
 #include "Map_Manager.h"
+#include "Event_Manager.h"
 
 using namespace DirectX;
 
@@ -46,10 +46,10 @@ void Main_Game_Manager::In_Game_Reset()
     Player_Reset();
     Player_Camera_Reset();
 
+    Weapon_Manager::GetInstance().Missile_Lock_On_List_Clear();
     Enemy_Manager::GetInstance().Reset();
     Bullet_Manager::GetInstance().Reset();
     Billboard_Manager::GetInstance().Reset();
-    Weapon_Manager::GetInstance().Missile_Lock_On_List_Clear();
 }
 
 void Main_Game_Manager::In_Game_Update(float elapsed_time)
@@ -62,6 +62,7 @@ void Main_Game_Manager::In_Game_Update(float elapsed_time)
     Player_Update(elapsed_time);
 
 	// Update Game Logic
+	Weapon_Manager::GetInstance().Update(elapsed_time);
     Enemy_Manager::GetInstance().Update(elapsed_time);
     Bullet_Manager::GetInstance().Update(elapsed_time);
     Billboard_Manager::GetInstance().Update(elapsed_time);
@@ -74,9 +75,8 @@ void Main_Game_Manager::In_Game_Update(float elapsed_time)
 void Main_Game_Manager::In_Game_Draw()
 {
     Direct3D_SetDepthEnable(true);
-
-	Light_Manager::GetInstance().Global_Light_Set_Up();
     Shader_Manager::GetInstance()->Begin3D();
+    Light_Manager::GetInstance().Global_Light_Set_Up();
 
 	// Draw Map   
     Map_Manager::GetInstance().Draw();

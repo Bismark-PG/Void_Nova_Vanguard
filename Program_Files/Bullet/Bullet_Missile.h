@@ -134,7 +134,7 @@ public:
     {
         if (!m_IsActive) return;
 
-        int texID = Texture_Manager::GetInstance()->GetID("Player");
+        int texID = Texture_Manager::GetInstance()->GetID("Debug_Circle");
         Billboard_Draw(texID, m_Position, 1.5f, 1.5f, { 0.5f, 0.5f }, { 0.0f, 0.5f, 1.0f, 1.0f });
     }
 

@@ -6,17 +6,28 @@
 	Project Name : Void Nova - Vanguard
 
 	Author : Choi HyungJoon
-	Date : 2026. 07. 00
-	Version : Alpha
-	Note : 
+	Date : 2026. 08. 21 ~ Ing
+	Version : Alpha Ver.5
+	Note : Add In-Game Details, UI Layout Adjustment, Make Look Like A "Game"
 
 	Version List : 
-			Date : 2025. 09. 09
+			Date : 2026. 06. 19
 			Version : Prototype
 			Note : Main Logic & Game Loop Completed
 
+			Date : 2026. 07. 12
+			Version : Alpha Ver.1
+			Note : Make Intrio And Menu Detail
+
+			Date : 2026. 08. 14
+			Version : Alpha Ver.2
+			Note : Make Event Manager, And Project Reorganization To OOP
+
+			Date : 2026. 08. 21
+			Version : Alpha Ver.4
+			Note : Enemy Spawn Logic Modularization, Make Main/Setting/In-Game Menu UI
+
 ==============================================================================*/
-// #define WIN32_LEAN_AND_MEAN
 #include "Project_Header.h"
 #include "System_Logic_Manager.h"
 #include "Main_Header.h"

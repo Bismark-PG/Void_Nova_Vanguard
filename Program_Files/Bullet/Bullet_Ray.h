@@ -9,11 +9,12 @@
 #define BULLET_RAY_H
 #include "Bullet.h"
 #include "Enemy_Manager.h"
-#include "Particle_Manager.h"
 #include "Player.h"
 #include "Player_Camera.h"
 #include "Billboard.h"          
 #include "Texture_Manager.h"
+#include "Event_Manager.h"
+#include "Combat_Register.h"
 using namespace DirectX;
 
 class Bullet_Ray : public Bullet
@@ -22,10 +23,10 @@ public:
     Bullet_Ray() = default;
     virtual ~Bullet_Ray() = default;
 
-    virtual void Activate(const XMFLOAT3& Start_Pos, const XMFLOAT3& Dir, BulletOwner Owner, int Damage) override
+    void Activate_Ray(const XMFLOAT3& Visual_Start, const XMFLOAT3& Logical_Start, const XMFLOAT3& Logical_Dir, int Damage)
     {
         // Base Setup
-        Bullet::Activate(Start_Pos, Dir, Owner, Damage);
+        Bullet::Activate(Visual_Start, Logical_Dir, BulletOwner::PLAYER, Damage);
 
         m_Max_Range     = 150.0f;
         m_Step_Size     = 0.5f;
@@ -33,14 +34,14 @@ public:
         m_Hit_Enemy     = false;
         m_Hit_Wall      = false;
 
-		// Get Hit Point Immediately using Ray Marching
-        Calculate_Hit_Point(m_Start_Position, m_Direction);
+		// Get Hit Point Immediately using Ray Marching (Logical Ray-Marching)
+        Calculate_Hit_Point(Logical_Start, Logical_Dir);
 
-		// Set Direction from Start to Target
-        XMVECTOR V_Start = XMLoadFloat3(&m_Start_Position);
+		// Set Direction from Start to Target (Visual)
+        XMVECTOR V_Vis_Start = XMLoadFloat3(&Visual_Start);
         XMVECTOR V_Target = XMLoadFloat3(&m_Target_Position);
-        XMVECTOR V_New_Dir = XMVector3Normalize(V_Target - V_Start);
-        XMStoreFloat3(&m_Direction, V_New_Dir);
+        XMVECTOR V_New_Vis_Dir = XMVector3Normalize(V_Target - V_Vis_Start);
+        XMStoreFloat3(&m_Direction, V_New_Vis_Dir);
     }
 
     virtual void Update(float Elapsed_Time) override
@@ -75,7 +76,7 @@ public:
     {
         if (!m_IsActive) return;
 
-        int texID = Texture_Manager::GetInstance()->GetID("Player");
+        int texID = Texture_Manager::GetInstance()->GetID("Debug_Circle");
         Billboard_Draw(texID, m_Position, 0.2f, 0.2f, { 0.5f, 0.5f }, { 1.0f, 0.8f, 0.0f, 1.0f });
     }
 
@@ -105,8 +106,8 @@ private:
             XMStoreFloat3(&Check_Pos, Ray_Pos);
 
             AABB Ray_AABB = {
-                { Check_Pos.x + 0.1f, Check_Pos.y + 0.1f, Check_Pos.z + 0.1f },
-                { Check_Pos.x - 0.1f, Check_Pos.y - 0.1f, Check_Pos.z - 0.1f }
+                { Check_Pos.x + Check_Radius, Check_Pos.y + Check_Radius, Check_Pos.z + Check_Radius },
+                { Check_Pos.x - Check_Radius, Check_Pos.y - Check_Radius, Check_Pos.z - Check_Radius }
             };
 
 			// If Player's Bullet, Check Enemy Collision
@@ -122,6 +123,7 @@ private:
                     break;
                 }
             }
+
             // Move To Next Step (Bullet Position)
             Ray_Pos += Ray_Dir * m_Step_Size;
             Now_Dist += m_Step_Size;
@@ -132,7 +134,8 @@ private:
     {
         if (m_Hit_Enemy || m_Hit_Wall)
         {
-            Particle_Manager::GetInstance().Spawn_Spark(m_Target_Position);
+            Combat_Hit_Event_Data hit_data(m_Target_Position);
+            EventManager::GetInstance().Fire(EventType::Visual_Hit_Effect, &hit_data);
         }
     }
 };

@@ -33,6 +33,8 @@ public:
 	
 	void Init();
 
+	void Update(float dt);
+
 	void Missile_Lock_On();
 	void Missile_Lock_On_List_Clear();
 
@@ -43,6 +45,11 @@ public:
 
 	const std::vector<LockOn_Data> Return_Lock_On_List();
 
+	void Toggle_Weapon();
+	void Fire_Current_Weapon(const DirectX::XMFLOAT3& Player_Pos, float Damage);
+
+	WeaponType Get_Current_Weapon() const { return m_Current_Weapon; }
+
 private:
 	static std::vector<LockOn_Data> Locked_Targets;
 	static constexpr size_t MAX_LOCK_ON = 8;
@@ -51,5 +58,8 @@ private:
 	float Random_Y_Range_MIN = 0.5f;
 	float Random_Y_Range_MAX = 2.0f;
 	float Missile_Z_Start_POS = 1.0f;
+
+	WeaponType m_Current_Weapon = WeaponType::MACHINE_GUN;
+	float m_Fire_Cooldown = 0.0f;
 };
 #endif // WEAPON_MANAGER_H

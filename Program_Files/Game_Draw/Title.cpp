@@ -7,18 +7,17 @@
 ==============================================================================*/
 #include "Project_Header.h"
 #include "Title.h"
+
+// Assential Logic
 #include "Fade.h"
-#include "direct3d.h"
+#include "Input_Manager.h"
+#include "Event_Manager.h"
+
+// Other
 #include "Shader_Manager.h"
-#include "Texture_Manager.h"
-#include "Audio_Manager.h"
-#include "Palette.h"
-#include "Sprite_Animation.h"
-#include "Game_Screen_Manager.h"
-#include "KeyLogger.h"
+#include "Sound_Register.h"
 
 using namespace DirectX;
-using namespace PALETTE;
 
 //-----------------Texture-----------------//
 static int Title_BG = -1, Title_Bracket = -1, Title_Bracket_RGB = -1;
@@ -72,20 +71,28 @@ static const float FADE_DURATION = 1.0f;
 static const float FADE_TIME = 1.5f;
 
 //---------------Private Logic---------------//
+void Title_Texture();
+
+// --- Phase 1 ---
 void Logo_Update(float dt);
 void Logo_Draw();
 
+// --- Phase 2 ---
 void Intro_Update(float dt);
 void Intro_Draw();
 
+// --- Phase 3 ---
 void Glitch_Update(float dt);
 void Glitch_Draw();
 
 void Flare_Update(float dt);
 
+// --- Background ---
 void Title_BG_Draw();
 
+// --- Skip ---
 void Title_Intro_Skip();
+
 //-----------------Main Logic-----------------//
 void Title_Initialize()
 {
@@ -183,7 +190,7 @@ void Title_Reset()
 
 void Title_Update(float elapsed_time)
 {
-    if (KeyLogger_IsTrigger(KK_ESCAPE) && !Is_Title_Skip)
+    if (M_INPUT->Is_Escape_Trigger() && !Is_Title_Skip)
     {
 		Title_Intro_Skip();
     }
@@ -336,7 +343,10 @@ void Intro_Update(float dt)
         if (!Is_Intro_SFX_Playing)
         {
             Debug::D_Out << "[Title] Intro Bracket Start" << std::endl;
-            Audio_Manager::GetInstance()->Play_SFX("Intro_Loading");
+
+            Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Intro_Loading);
+            EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+
             Is_Intro_SFX_Playing = true;
         }
 
@@ -495,7 +505,9 @@ void Glitch_Update(float dt)
 
         if (Nova_Ratio >= 0.8f && !Is_Glitch_SFX_Playing)
         {
-            Audio_Manager::GetInstance()->Play_SFX("Intro_Glitch_Sound");
+            Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Intro_Glitch);
+            EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+
             Is_Glitch_SFX_Playing = true;
 
             Debug::D_Out << "[Title] Glitch Start" << std::endl;
@@ -515,7 +527,9 @@ void Glitch_Update(float dt)
         {
             Debug::D_Out << "[Title] Black Out After Glitch" << std::endl;
             Current_Glitch_State = GLITCH_STATE::BLACK_OUT;
-            Audio_Manager::GetInstance()->Stop_All_SFX();
+
+            EventManager::GetInstance().Fire(EventType::Stop_Audio_SFX_All);
+
             Glitch_Timer = 0.0f;
         }
         break;
@@ -552,7 +566,7 @@ void Glitch_Update(float dt)
             Current_Glitch_State = GLITCH_STATE::DONE;
 
             Debug::D_Out << "[Title] Change State Title To Main_Menu" << std::endl;
-            Game_Screen_Manager::GetInstance()->Update_Main_Screen(Main_Screen::MENU_SELECT);
+            EventManager::GetInstance().Fire(EventType::Go_From_Title_To_Main_Menu);
         }
         break;
 
@@ -679,7 +693,9 @@ void Flare_Update(float dt)
 
         if (Flare_Timer >= 1.0f && !Is_Flare_SFX_Playing)
         {
-            Audio_Manager::GetInstance()->Play_SFX("Intro_Flare");
+            Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Intro_Flare);
+            EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+
             Is_Flare_SFX_Playing = true;
         }
 
@@ -728,7 +744,8 @@ void Title_BG_Draw()
 void Title_Intro_Skip()
 {
     Fade_Start(0.2f, true, White);
-    Audio_Manager::GetInstance()->Stop_All_SFX();
+
+    EventManager::GetInstance().Fire(EventType::Stop_Audio_SFX_All);
 
     Current_Logo_State   = LOGO_STATE::DONE;
     Current_Intro_State  = INTRO_STATE::DONE;
@@ -772,12 +789,12 @@ void Title_Texture()
         || Intro_Nova == -1 || Intro_Operation == -1 || Intro_Flare == -1)
     {
         Debug::D_Out << "[Intro Title] Texture Init Error" << std::endl;
-        Debug::D_Out << "Title_BG : "    << Title_BG          << "\Title_Bracket : "     << Title_Bracket
+        Debug::D_Out << "Title_BG : "    << Title_BG          << "\tTitle_Bracket : "     << Title_Bracket
             << "\tIntro_Logo : "         << Intro_Logo        << "\tIntro_MadeBy : "     << Intro_MadeBy
             << "\tIntro_Corparation : "  << Intro_Corparation << "\tIntro_Name : "       << Intro_Name
             << "\tIntro_System : "       << Intro_System      << "\tIntro_Dtat : "       << Intro_Dtat
             << "\tIntro_Ready : "        << Intro_Ready       << "\tIntro_Nova : "       << Intro_Nova
-            << "\Intro_Flare : "         << Intro_Flare       << "\tTitle_Bracket_RGB :" << Title_Bracket_RGB
+            << "\tIntro_Flare : "         << Intro_Flare      << "\tTitle_Bracket_RGB :" << Title_Bracket_RGB
             << std::endl;
     }
 }

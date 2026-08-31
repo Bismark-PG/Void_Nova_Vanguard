@@ -29,6 +29,7 @@ public:
 	void draw();
 
 	void Spawn(EnemyType type, const DirectX::XMFLOAT3& spawnPos);
+	int Get_Active_Enemy_Count() const;
 
 	std::vector<Enemy*>& Get_Active_List()
 	{ 

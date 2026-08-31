@@ -91,7 +91,7 @@ void Enemy::OnHit()
 AABB Enemy::GetAABB() const
 {
 	float radius = m_Info.Scale * 0.5f;
-	float depth = 0.1f;
+	float depth  = radius;
 
 	return AABB
 	{

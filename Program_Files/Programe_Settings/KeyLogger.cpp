@@ -200,6 +200,12 @@ int KeyLogger_GetMouse_MoveY()
 	return MouseState.y;
 }
 
+bool KeyLogger_IsMouseMoved()
+{
+	return (abs(MouseState.x - MousePrevState.x) > 1 ||
+			abs(MouseState.y - MousePrevState.y) > 1);
+}
+
 bool KeyLogger_IsMousePressed(Mouse_Button button)
 {
 	if (button == LEFT)

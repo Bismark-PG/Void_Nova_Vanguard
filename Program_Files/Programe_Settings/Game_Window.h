@@ -42,8 +42,8 @@ private:
 	UINT m_ScreenHeight = 1080;
 	bool m_IsMessageBoxOpen = false;
 
-	static constexpr wchar_t WINDOW_CLASS[] = L"Hyper Trigger";
-	static constexpr wchar_t TITLE[] = L"Hyper Trigger";
+	static constexpr wchar_t WINDOW_CLASS[] = L"Viod Nova : Vanguard";
+	static constexpr wchar_t TITLE[] = L"Viod Nova : Vanguard";
 };
 
 extern float SCREEN_WIDTH;

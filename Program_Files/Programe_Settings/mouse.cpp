@@ -11,6 +11,7 @@
 #include "Sprite.h"
 #include "Texture_Manager.h"
 #include "debug_ostream.h"
+#include "direct3d.h"
 
 #define SAFE_CLOSEHANDLE(h) if(h){CloseHandle(h); h = NULL;}
 
@@ -31,8 +32,6 @@ static bool Debug_Mode = false;
 
 static void clipToWindow(void);
 
-static int Mouse_UI_Tex = -1;
-bool Mouse_Movement = false;
 
 void Mouse_Initialize(HWND window)
 {
@@ -50,6 +49,7 @@ void Mouse_Initialize(HWND window)
     gWindow = window;
     gMode = MOUSE_POSITION_MODE_ABSOLUTE;
 
+	// Event Management
     if (!gScrollWheelValue) { gScrollWheelValue = CreateEventEx(nullptr, nullptr, CREATE_EVENT_MANUAL_RESET, EVENT_MODIFY_STATE | SYNCHRONIZE); }
     if (!gRelativeRead) { gRelativeRead = CreateEventEx(nullptr, nullptr, CREATE_EVENT_MANUAL_RESET, EVENT_MODIFY_STATE | SYNCHRONIZE); }
     if (!gAbsoluteMode) { gAbsoluteMode = CreateEventEx(nullptr, nullptr, 0, EVENT_MODIFY_STATE | SYNCHRONIZE); }
@@ -65,6 +65,7 @@ void Mouse_Initialize(HWND window)
 
 void Mouse_Finalize(void)
 {
+	// Safe Delete Event Handles
     SAFE_CLOSEHANDLE(gScrollWheelValue);
     SAFE_CLOSEHANDLE(gRelativeRead);
     SAFE_CLOSEHANDLE(gAbsoluteMode);
@@ -178,7 +179,7 @@ void Mouse_ProcessMessage(UINT message, WPARAM wParam, LPARAM lParam)
         point.x = gLastX;
         point.y = gLastY;
 
-        // リモートディスクトップに対応するために移動前にカーソルを表示する
+		// Show Mose Cursor If Absolute Mode
         ShowCursor(TRUE);
 
         if (MapWindowPoints(gWindow, nullptr, &point, 1)) {
@@ -199,6 +200,7 @@ void Mouse_ProcessMessage(UINT message, WPARAM wParam, LPARAM lParam)
         gRelativeX = INT32_MAX;
         gRelativeY = INT32_MAX;
 
+		// Do not Show Mose Cursor If Relative Mode
         ShowCursor(FALSE);
 
         clipToWindow();
@@ -250,7 +252,7 @@ void Mouse_ProcessMessage(UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 else if (raw.data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP) {
 
-                    // リモートディスクトップなどに対応
+					// Get Mouse Position In Virtual Desktop
                     const int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
                     const int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
@@ -336,13 +338,12 @@ void Mouse_ProcessMessage(UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     default:
-        // マウスに対するメッセージは無かった…
         return;
     }
 
     if (gMode == MOUSE_POSITION_MODE_ABSOLUTE) {
 
-        // すべてのマウスメッセージに対して新しい座標を取得する
+		// Get Mouse Position For All Mouse Messages
         int xPos = GET_X_LPARAM(lParam);
         int yPos = GET_Y_LPARAM(lParam);
 
@@ -369,62 +370,6 @@ bool Is_Mouse_In_RECT(float mx, float my, float x, float y, float w, float h)
     return (mx >= x && mx <= x + w && my >= y && my <= y + h);
 }
 
-bool Is_Mouse_Moved()
-{
-    return Mouse_Movement;
-}
-
-void Return_Mouse_Movement()
-{
-    Mouse_Movement = false;
-}
-
-void Mouse_UI_Draw(Mouse_Info Info)
-{
-    //float Mouse_Half = Info.Size * 0.5f;
-    float Mouse_Half = 0.0f;
-    float Mouse_X = Info.X - Mouse_Half, Mouse_Y = Info.Y - Mouse_Half;
-
-    Sprite_Draw(Mouse_UI_Tex, Mouse_X, Mouse_Y, Info.Size, Info.Size);
-
-    // Debug::D_Out << "[Mouse] X : " << Info.X << " Y : " << Info.Y << std::endl;
-}
-
-Mouse_State Mouse_Get_Prev_State(Mouse_Info& Info)
-{
-    Mouse_State Now_State;
-    Mouse_GetState(&Now_State);
-    Info.X = static_cast<float>(Now_State.x);
-    Info.Y = static_cast<float>(Now_State.y);
-    
-    Mouse_Movement = (abs(Info.X - Info.Prev_X) > 1.0f || abs(Info.Y - Info.Prev_Y) > 1.0f);
-    Info.Prev_X = Info.X;
-    Info.Prev_Y = Info.Y;
-
-    return Now_State;
-}
-
-bool Mouse_State_Reset()
-{
-    Mouse_State InitState;
-    Mouse_GetState(&InitState);
-
-    return InitState.leftButton;
-}
-
-void Mouse_UI_set()
-{
-    Mouse_UI_Tex = Texture_Manager::GetInstance()->GetID("UI_Mouse_Cursor");
-    Mouse_Movement = false;
-
-    if (Mouse_UI_Tex == -1)
-    {
-        Debug::D_Out << "[Mouse UI] Texture Init Error" << std::endl;
-        Debug::D_Out << "Mouse_UI_Tex : " << Mouse_UI_Tex << std::endl;
-    }
-}
-
-
 void clipToWindow(void)
 {
     assert(gWindow != NULL);
@@ -432,11 +377,11 @@ void clipToWindow(void)
     RECT rect;
     GetClientRect(gWindow, &rect);
 
-    POINT ul;
+    POINT ul = {};
     ul.x = rect.left;
     ul.y = rect.top;
 
-    POINT lr;
+    POINT lr = {};
     lr.x = rect.right;
     lr.y = rect.bottom;
 

@@ -22,7 +22,7 @@
 #include <xaudio2.h>
 #include <winsock2.h>
 
-//--------------------- C++ Standard Library ---------------------//
+//--------------------- C/C++ Standard Library ---------------------//
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -38,6 +38,7 @@
 #include <map>
 #include <mutex>
 #include <chrono>
+#include <functional>
 
 //--------------------- DirectX ---------------------//
 #include <sdkddkver.h>

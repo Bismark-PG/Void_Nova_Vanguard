@@ -15,17 +15,29 @@
 #include "Main_Menu.h"
 #include "Title.h"
 #include "Setting.h"
+#include "Stage_Select.h"
+#include "Event_Manager.h"
+#include "Game_UI.h"
 
+//---------------Private Logic---------------//
+void Sub_Game_Screen_Draw_Update();
+void Game_Select_Screen_Draw_Update();
+
+//-----------------Main Logic-----------------//
 void Game_Logic_Initialize()
 {
 	Main_Game_Manager::GetIntance()->In_Game_Initialize();
 	Title_Initialize();
 	Main_Menu_Initialize();
 	Setting_Initialize();
+	Stage_Select_Initialize();
+	Game_UI_Initialize();
 }
 
 void Game_Logic_Finalize()
 {
+	Game_UI_Finalize();
+	Stage_Select_Finalize();
 	Setting_Finalize();
 	Main_Menu_Finalize();
 	Title_Finalize();
@@ -36,14 +48,13 @@ void Game_Logic_Update(double elapsed_time)
 {
 	float dt = static_cast<float>(elapsed_time);
 
+	Game_UI_Update(dt);
+
 	if (KeyLogger_IsTrigger(KK_BACK))
 	{
 		if (Game_Screen_Manager::GetInstance()->Get_Current_Main_Screen() == Main_Screen::SELECT_GAME)
 		{
-			Game_Screen_Manager::GetInstance()->Update_Main_Screen(Main_Screen::MENU_SELECT);
-			Game_Screen_Manager::GetInstance()->Update_Game_Select_Screen(Game_Select_Screen::G_WAIT);
-			Set_Main_Menu_Buffer(Main_Select_Buffer::None);
-			Mouse_SetMode(MOUSE_POSITION_MODE_ABSOLUTE);
+			EventManager::GetInstance().Fire(EventType::Go_From_In_Game_To_Main_Menu);
 		}
 	}
 
@@ -52,9 +63,10 @@ void Game_Logic_Update(double elapsed_time)
 	Main_Screen M_State = Game_Screen_Manager::GetInstance()->Get_Current_Main_Screen();
 	Sub_Screen S_State = Game_Screen_Manager::GetInstance()->Get_Current_Sub_Screen();
 	Game_Select_Screen G_State = Game_Screen_Manager::GetInstance()->Get_Current_Game_Select_Screen();
+	bool Is_Sub_Screen_Active = Game_Screen_Manager::GetInstance()->Is_Sub_Screen_Active();
 
 	// If Sub Screen(Setting) Is Pop-Up, Do Update Setting Only
-	if (S_State != Sub_Screen::S_WAIT)
+	if (Is_Sub_Screen_Active)
 	{
 		Game_Logic_Sub(S_State, dt);
 	}
@@ -94,6 +106,10 @@ void Game_Logic_Sub(Sub_Screen State, float elapsed_time)
 	case Sub_Screen::S_WAIT:
 		break;
 
+	case Sub_Screen::STAGE_SELECT:
+		Stage_Select_Update(elapsed_time);
+		break;
+
 	case Sub_Screen::SETTINGS:
 		Setting_Update(elapsed_time);
 		break;
@@ -111,10 +127,15 @@ void Game_Logic_InGame(Game_Select_Screen State, float elapsed_time)
 		break;
 
 	case Game_Select_Screen::GAME_MENU_SELECT:
-		Main_Game_Manager::GetIntance()->In_Game_Update(elapsed_time);
 		break;
 
 	case Game_Select_Screen::GAME_PLAYING:
+		if (KeyLogger_IsTrigger(KK_ESCAPE) || XKeyLogger_IsPadTrigger(XINPUT_GAMEPAD_START))
+		{
+			EventManager::GetInstance().Fire(EventType::Open_Settings);
+		}
+
+		Main_Game_Manager::GetIntance()->In_Game_Update(elapsed_time);
 		break;
 
 	case Game_Select_Screen::GAME_IN_GAME_MENU:
@@ -128,7 +149,7 @@ void Game_Logic_InGame(Game_Select_Screen State, float elapsed_time)
 	}
 }
 
-void Main_Game_Screen_Update()
+void Main_Game_Screen_Draw_Update()
 {
 	Main_Screen current_screen = Game_Screen_Manager::GetInstance()->Get_Current_Main_Screen();
 
@@ -148,7 +169,7 @@ void Main_Game_Screen_Update()
 		break;
 
 	case Main_Screen::SELECT_GAME:
-		Game_Select_Screen_Update();
+		Game_Select_Screen_Draw_Update();
 		break;
 
 	case Main_Screen::EXIT:
@@ -163,16 +184,23 @@ void Main_Game_Screen_Update()
 		break;
 	}
 
-	Sub_Game_Screen_Update();
+	Sub_Game_Screen_Draw_Update();
+
+	// Draw In Game UI
+	Game_UI_Draw();
 }
 
-void Sub_Game_Screen_Update()
+void Sub_Game_Screen_Draw_Update()
 {
 	Sub_Screen current_screen = Game_Screen_Manager::GetInstance()->Get_Current_Sub_Screen();
 
 	switch (current_screen)
 	{
 	case Sub_Screen::S_WAIT:
+		break;
+
+	case Sub_Screen::STAGE_SELECT:
+		Stage_Select_Draw();
 		break;
 
 	case Sub_Screen::SETTINGS:
@@ -186,7 +214,7 @@ void Sub_Game_Screen_Update()
 	}
 }
 
-void Game_Select_Screen_Update()
+void Game_Select_Screen_Draw_Update()
 {
 	Game_Select_Screen current_screen = Game_Screen_Manager::GetInstance()->Get_Current_Game_Select_Screen();
 
@@ -196,10 +224,10 @@ void Game_Select_Screen_Update()
 		break;
 
 	case Game_Select_Screen::GAME_MENU_SELECT:
-		Main_Game_Manager::GetIntance()->In_Game_Draw();
 		break;
 
 	case Game_Select_Screen::GAME_PLAYING:
+		Main_Game_Manager::GetIntance()->In_Game_Draw();
 		break;
 
 	case Game_Select_Screen::GAME_IN_GAME_MENU:

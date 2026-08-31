@@ -20,9 +20,9 @@ enum Mouse_Button
 };
 
 void KeyLogger_Initialize(HWND window);
-
 void KeyLogger_Update();
 
+// Keyboard Input Functions
 bool KeyLogger_IsPressed(Keyboard_Keys key);
 bool KeyLogger_IsTrigger(Keyboard_Keys key);
 bool KeyLogger_IsReleased(Keyboard_Keys key);
@@ -31,13 +31,16 @@ bool KeyLogger_IsAnyKeyTriggered();
 bool KeyLogger_IsAnyKeyReleased();
 bool KeyLogger_IsKeyInput();
 
+// Mouse Input Functions
 int KeyLogger_GetMouse_MoveX();
 int KeyLogger_GetMouse_MoveY();
+bool KeyLogger_IsMouseMoved();
 
 bool KeyLogger_IsMousePressed(Mouse_Button button);
 bool KeyLogger_IsMouseTrigger(Mouse_Button button);
 bool KeyLogger_IsMouseReleased(Mouse_Button button);
 
+// Controller Input Functions
 bool XKeyLogger_IsControllerInput();
 bool XKeyLogger_GetControllerConnected();
 bool XKeyLogger_GetControllerDisconnected();
@@ -53,6 +56,7 @@ BYTE XKeyLogger_GetRightTrigger();
 
 bool XKeyLogger_IsAnyPadReleased();
 
+// KeyLogger State Reset
 void KeyLogger_Reset();
 
 #endif // KEY_LOGGER_H

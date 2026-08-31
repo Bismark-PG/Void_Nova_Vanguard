@@ -11,6 +11,7 @@
 #include <vector>
 #include <DirectXMath.h>
 #include "Enemy_Type.h"
+#include "Wave_Data.h"
 
 class Enemy_Spawner
 {
@@ -25,8 +26,8 @@ public:
     void Update(float dt);
     void Reset();
 
-    float GetCurrentGameTime() const { return m_GameTime; }
-    
+    void Start_Stage(int stage);
+
     void Set_Z_Depth(float depth);
     float Get_Z_Depth() const;
 
@@ -36,10 +37,18 @@ private:
     Enemy_Spawner(const Enemy_Spawner&) = delete;
     Enemy_Spawner& operator=(const Enemy_Spawner&) = delete;
 
-    DirectX::XMFLOAT3 Get_Spawn_Position(EnemyType type, float ratio_X, int batchIndex) const;
+    DirectX::XMFLOAT3 Get_Spawn_Position(EnemyType type, float ratio_X) const;
 
-    float m_GameTime = 0.0f;
-    std::vector<float> m_WaveTimers;
+    // Spawner Info
     float m_Spawn_Base_Z = 150.0f;
+    float m_CooldownTimer = 0.0f;
+
+    // Stage Info
+    int m_Current_Stage = 0;
+    bool m_Is_Spawning_Done = false;
+
+    // Stage Wave Info
+    std::vector<Wave> m_Current_Stage_Waves;    // Copy Index For Wave List
+    size_t m_Wave_Index = 0;                    // For Current Wave List
 };
 #endif // ENEMY_SPAWNER_H

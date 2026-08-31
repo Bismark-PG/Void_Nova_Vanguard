@@ -7,11 +7,16 @@
 ==============================================================================*/
 #include "Project_Header.h"
 #include "Player.h"
-#include "KeyLogger.h"
+
+// Assential Logic
+#include "Palette.h"
+#include "Event_Manager.h"
+#include "Input_Manager.h"
+
+// Other
 #include "Shader_Manager.h"
 #include "Player_Camera.h" 
 #include "Debug_Collision.h"
-#include "Palette.h"
 #include "Billboard_Manager.h"
 #include "Cube.h"
 #include "Heapler_Logic.h"
@@ -19,6 +24,8 @@
 #include "Bullet_Manager.h"
 #include "Enemy_Manager.h"
 #include "Weapon_System.h"
+#include "Combat_Register.h"
+#include "debug_ostream.h"
 using namespace DirectX;
 using namespace PALETTE;
 
@@ -36,13 +43,22 @@ static float Aim_Move_Speed = 40.0f;
 static float Player_Tension_Speed = 6.0f;
 static float Safe_Zone_Ratio = 0.7f;
 
-// --- Combat System ---
-static WeaponType Current_Weapon = WeaponType::MACHINE_GUN;
-static float Fire_Cooldown = 0.0f;
+// Player Visual State 
+enum class Player_Visual_State
+{
+	Bot_Left, Bot_Center, Bot_Right,
+	Mid_Left, Mid_Center, Mid_Right,
+	Top_Left, Top_Center, Top_Right 
+};
+static Player_Visual_State Visual_State = Player_Visual_State::Bot_Center;
+
+// Player Visual Resources 
+static int Player_Bot_C = -1, Player_Bot_L = -1, Player_Bot_R = -1;
+static int Player_Mid_C = -1, Player_Mid_L = -1, Player_Mid_R = -1;
+static int Player_Top_C = -1, Player_Top_L = -1, Player_Top_R = -1;
 
 // Player resource
-static int Player_TexID = -1;
-static XMFLOAT2 Player_Size = { 2.0f, 2.0f };
+static XMFLOAT2 Player_Size = { 2.0f, 1.0f };
 static float Player_HP = 100;
 static float Player_MaxHP = 100;
 static float Player_ATK = 10;
@@ -53,19 +69,30 @@ static bool Is_Input_Moving = false;
 //				static Player Update Logic
 // ----------------------------------------------------------
 // --- Movement And Physics System ---
-
-// --- Input ---
 static XMVECTOR Player_Update_Movement_Input();
+
+// --- Visual ---
+static void Player_Texture();
+static void Player_Update_Visual_State();
+static int	Player_Update_Visual_Resources();
+
+// --- Combat ---
 static void Player_Update_Aim_Input(float dt);
 static void Player_Update_Weapon_Logic(float dt);
 // ----------------------------------------------------------
 
 void Player_Initialize()
 {
+	Player_Texture();
+
 	Player_Pos	= FIRST_POS;
 	Aim_Pos		= FIRST_POS;
 
-	Player_TexID = Texture_Manager::GetInstance()->GetID("Player");
+	float ScreenW = static_cast<float>(Direct3D_GetBackBufferWidth());
+	float ScreenH = static_cast<float>(Direct3D_GetBackBufferHeight());
+
+	// Player_Size.x = ScreenW * 0.1;
+	// Player_Size.y = ScreenW * 0.1;
 }
 
 void Player_Finalize()
@@ -113,7 +140,7 @@ void Player_Update(float elapsed_time)
 
 	XMStoreFloat3(&Player_Pos, Current_Pos);
 
-	Fire_Cooldown -= elapsed_time;
+	Player_Update_Visual_State();
 	Player_Update_Weapon_Logic(elapsed_time);
 }
 
@@ -128,21 +155,11 @@ void Player_Reset()
 
 void Player_Draw()
 {
-	if (Player_TexID != -1)
+	int ID = Player_Update_Visual_Resources();
+
+	if (ID != -1)
 	{
-		Billboard_Draw(Player_TexID, Player_Pos, Player_Size.x, Player_Size.y, { 0.5f, 0.5f });
-
-		XMFLOAT4 Aim_Color = (Current_Weapon == WeaponType::MACHINE_GUN) ?
-			XMFLOAT4(1.0f, 1.0f, 0.0f, 0.5f) : XMFLOAT4(0.0f, 0.5f, 1.0f, 0.5f);
-		Billboard_Draw(Player_TexID, Aim_Pos, 0.25f, 0.25f, { 0.5f, 0.5f }, Aim_Color);
-
-		for (const LockOn_Data& L : Weapon_Manager::GetInstance().Return_Lock_On_List())
-		{
-			if (L.Target_Ptr->IsActive() && L.Target_Ptr->GetUniqueID() == L.Target_ID)
-			{
-				Billboard_Draw(Player_TexID, L.Target_Ptr->GetPosition(), 1.5f, 1.5f, { 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f, 0.8f }, Billboard_Facing::ALL_AXIS);
-			}
-		}
+		Billboard_Draw(ID, Player_Pos, Player_Size.x, Player_Size.y, { 0.5f, 0.5f });
 	}
 }
 
@@ -158,16 +175,6 @@ void Player_Damaged(int damage)
 {
 	Player_HP -= damage;
 	if (Player_HP < 0) Player_HP = 0;
-}
-
-void Player_Fire_Interval(float Interval)
-{
-	Fire_Cooldown = Interval;
-}
-
-void Player_Set_Weapon_Mode(WeaponType Type)
-{
-	Current_Weapon = Type;
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -191,11 +198,6 @@ float Player_Get_HP()
 float Player_Get_MaxHP()
 {
 	return Player_MaxHP;
-}
-
-WeaponType Player_Get_Weapon_Mode()
-{
-	return Current_Weapon;
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -237,17 +239,18 @@ XMVECTOR Player_Update_Movement_Input()
 	XMVECTOR Input_Dir = XMVectorZero();
 
 	// Get Keyboard, D-Pad Input
-	if (KeyLogger_IsPressed(KK_W) || XKeyLogger_IsPadPressed(XINPUT_GAMEPAD_DPAD_UP))    
+
+	if (M_INPUT->Is_Up_Pressed())
 		Input_Dir += Flat_Front;
-	if (KeyLogger_IsPressed(KK_S) || XKeyLogger_IsPadPressed(XINPUT_GAMEPAD_DPAD_DOWN)) 
+	if (M_INPUT->Is_Down_Pressed())
 		Input_Dir -= Flat_Front;
-	if (KeyLogger_IsPressed(KK_D) || XKeyLogger_IsPadPressed(XINPUT_GAMEPAD_DPAD_RIGHT))
-		Input_Dir += Flat_Right;
-	if (KeyLogger_IsPressed(KK_A) || XKeyLogger_IsPadPressed(XINPUT_GAMEPAD_DPAD_LEFT))  
+	if (M_INPUT->Is_Left_Pressed())
 		Input_Dir -= Flat_Right;
+	if (M_INPUT->Is_Right_Pressed())
+		Input_Dir += Flat_Right;
 
 	// Get Left Stick Input
-	XMFLOAT2 Stick = XKeyLogger_GetLeftStick();
+	XMFLOAT2 Stick = M_INPUT->Controller_Input_L_Stick();
 	float Stick_Magnitude = sqrtf(Stick.x * Stick.x + Stick.y * Stick.y);
 
 	if (Stick_Magnitude > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
@@ -269,6 +272,103 @@ XMVECTOR Player_Update_Movement_Input()
 	return Input_Dir;
 }
 
+// ----------------------------------------------------------------------------------------------------------------
+//												--- Visual ---
+// ----------------------------------------------------------------------------------------------------------------
+void Player_Texture()
+{
+	//---------------Bottom---------------//
+	Player_Bot_L = Texture_Manager::GetInstance()->GetID("Player_Bottom_Left");
+	Player_Bot_C = Texture_Manager::GetInstance()->GetID("Player_Bottom_Center");
+	Player_Bot_R = Texture_Manager::GetInstance()->GetID("Player_Bottom_Right");
+
+	//----------------Mid----------------//
+	Player_Mid_L = Texture_Manager::GetInstance()->GetID("Player_Middle_Left");
+	Player_Mid_C = Texture_Manager::GetInstance()->GetID("Player_Middle_Center");
+	Player_Mid_R = Texture_Manager::GetInstance()->GetID("Player_Middle_Right");
+
+	//----------------Top----------------//
+	Player_Top_L = Texture_Manager::GetInstance()->GetID("Player_Top_Left");
+	Player_Top_C = Texture_Manager::GetInstance()->GetID("Player_Top_Center");
+	Player_Top_R = Texture_Manager::GetInstance()->GetID("Player_Top_Right");
+
+    if (Player_Bot_C == -1 || Player_Bot_L == -1 || Player_Bot_R == -1
+        || Player_Mid_C == -1 || Player_Top_C == -1 || Player_Top_L == -1 || Player_Top_R == -1)
+    {
+        Debug::D_Out << "[Player] Texture Init Error" << std::endl;
+        Debug::D_Out << "Player Bottom Center : "   << Player_Bot_C << "\tPlayer Bottom Left : "     << Player_Bot_L
+            << "\tPlayer Bottom Right : "			<< Player_Bot_R << "\tPlayer Miidle Center : "	<< Player_Mid_C
+            << "\tPlayer Miidle Left : "			<< Player_Mid_L << "\tPlayer Miidle Right : "	<< Player_Mid_R
+            << "\tPlayer Top Center : "				<< Player_Top_C << "\tPlayer Top Left : "		<< Player_Top_L
+            << "\tPlayer Top Right : "				<< Player_Top_R << std::endl;
+    }
+}
+
+void Player_Update_Visual_State()
+{
+	// Set Trigger POS
+	float Safe_Y_Max = Get_Player_Limit_Y_Max() * Safe_Zone_Ratio;
+	float Limit_X = Get_Player_Limit_X();
+
+	// Set Threshold Y
+	float Threshold_Y_High = Safe_Y_Max * 0.5f;
+	float Threshold_Y_Mid = Safe_Y_Max * 0.25f; 
+
+	// Set Threshold X
+	float Threshold_X = Limit_X * 0.2f;
+
+	// Check Y Axis, After Check X Axis
+	if (Player_Pos.y >= Threshold_Y_High)
+	{
+		// Upper Axis
+		if (Player_Pos.x <= -Threshold_X)      Visual_State = Player_Visual_State::Top_Left;
+		else if (Player_Pos.x >= Threshold_X)  Visual_State = Player_Visual_State::Top_Right;
+		else                                   Visual_State = Player_Visual_State::Top_Center;
+	}
+	else if (Player_Pos.y >= Threshold_Y_Mid)
+	{
+		// Middle Axis
+		if (Player_Pos.x <= -Threshold_X)      Visual_State = Player_Visual_State::Mid_Left;
+		else if (Player_Pos.x >= Threshold_X)  Visual_State = Player_Visual_State::Mid_Right;
+		else                                   Visual_State = Player_Visual_State::Mid_Center;
+	}
+	else
+	{
+		// Bottom Axis
+		if (Player_Pos.x <= -Threshold_X)      Visual_State = Player_Visual_State::Bot_Left;
+		else if (Player_Pos.x >= Threshold_X)  Visual_State = Player_Visual_State::Bot_Right;
+		else                                   Visual_State = Player_Visual_State::Bot_Center;
+	}
+}
+
+int Player_Update_Visual_Resources()
+{
+	int Draw_ID = -1;
+
+	switch (Visual_State)
+	{
+		// Bottom Axis
+	case Player_Visual_State::Bot_Left:		Draw_ID = Player_Bot_L; break;
+	case Player_Visual_State::Bot_Center:	Draw_ID = Player_Bot_C; break;
+	case Player_Visual_State::Bot_Right:	Draw_ID = Player_Bot_R; break;
+
+		// Middle Axis
+	case Player_Visual_State::Mid_Left:		Draw_ID = Player_Mid_L; break;
+	case Player_Visual_State::Mid_Center:	Draw_ID = Player_Mid_C; break;
+	case Player_Visual_State::Mid_Right:	Draw_ID = Player_Mid_R; break;
+
+		// Top Axis
+	case Player_Visual_State::Top_Left:		Draw_ID = Player_Top_L; break;
+	case Player_Visual_State::Top_Center:	Draw_ID = Player_Top_C; break;
+	case Player_Visual_State::Top_Right:	Draw_ID = Player_Top_R; break;
+	}
+
+	return Draw_ID;
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+//												--- Combat ---
+// ----------------------------------------------------------------------------------------------------------------
 void Player_Update_Aim_Input(float dt)
 {
 	float Limit_X = Get_Player_Limit_X();
@@ -276,21 +376,20 @@ void Player_Update_Aim_Input(float dt)
 	float Limit_Y_Max = Get_Player_Limit_Y_Max();
 
 	// Gamepad R-Stick
-	XMFLOAT2 RStick = XKeyLogger_GetRightStick();
-	float Stick_Mag = sqrtf(RStick.x * RStick.x + RStick.y * RStick.y);
+	XMFLOAT2 Stick = M_INPUT->Controller_Input_R_Stick();
+	float Stick_Mag = sqrtf(Stick.x * Stick.x + Stick.y * Stick.y);
 
 	if (Stick_Mag > 8689.0f) // Gamepad R-Stick Aiming
 	{
-		Aim_Pos.x += (RStick.x / 32767.0f) * Aim_Move_Speed * dt;
-		Aim_Pos.y += (RStick.y / 32767.0f) * Aim_Move_Speed * dt;
+		Aim_Pos.x += (Stick.x / 32767.0f) * Aim_Move_Speed * dt;
+		Aim_Pos.y += (Stick.y / 32767.0f) * Aim_Move_Speed * dt;
 
 		float Pad_Limit_X = Get_Player_Limit_X() * 1.5f;
 		Aim_Pos.x = ClampFloat(Aim_Pos.x, -Pad_Limit_X, Pad_Limit_X);
 	}
 	else // Mouse Aiming
 	{
-		int Mouse_X = KeyLogger_GetMouse_MoveX();
-		int Mouse_Y = KeyLogger_GetMouse_MoveY();
+		XMFLOAT2 Mouse = M_INPUT->Mouse_Position();
 
 		float w = static_cast<float>(Window_Manager::GetInstance()->GetWidth());
 		float h = static_cast<float>(Window_Manager::GetInstance()->GetHeight());
@@ -302,8 +401,8 @@ void Player_Update_Aim_Input(float dt)
 			XMMATRIX Proj = XMLoadFloat4x4(&Player_Camera_Get_Proj_Matrix());
 			XMMATRIX World = XMMatrixIdentity();
 
-			XMVECTOR V_Near = XMVectorSet(static_cast<float>(Mouse_X), static_cast<float>(Mouse_Y), 0.0f, 1.0f);
-			XMVECTOR V_Far = XMVectorSet(static_cast<float>(Mouse_X), static_cast<float>(Mouse_Y), 1.0f, 1.0f);
+			XMVECTOR V_Near = XMVectorSet(static_cast<float>(Mouse.x), static_cast<float>(Mouse.y), 0.0f, 1.0f);
+			XMVECTOR V_Far  = XMVectorSet(static_cast<float>(Mouse.x), static_cast<float>(Mouse.y), 1.0f, 1.0f);
 
 			XMVECTOR V_Origin = XMVector3Unproject(V_Near, 0, 0, w, h, 0.0f, 1.0f, Proj, View, World);
 			XMVECTOR V_Dest = XMVector3Unproject(V_Far, 0, 0, w, h, 0.0f, 1.0f, Proj, View, World);
@@ -325,39 +424,18 @@ void Player_Update_Aim_Input(float dt)
 
 void Player_Update_Weapon_Logic(float dt)
 {
-	// Weapon Change
-	if (KeyLogger_IsTrigger(KK_E) || XKeyLogger_IsPadTrigger(XINPUT_GAMEPAD_Y))
+	// Weapon Change Request Logic
+	if (M_INPUT->Is_Weapon_Changed())
 	{
-		Current_Weapon = (Current_Weapon == WeaponType::MACHINE_GUN) ? WeaponType::MISSILE : WeaponType::MACHINE_GUN;
-		Weapon_Manager::GetInstance().Missile_Lock_On_List_Clear();	// If Weapon Changed, Cancel Lock On 
+		EventManager::GetInstance().Fire(EventType::Player_Weapon_Change_Requested);
 	}
 
-	// 1. Lock On Logic
-	// IF Current Weapon Is Missile, Lock On Logic
-	if (Current_Weapon == WeaponType::MISSILE)
-	{
-		Weapon_Manager::GetInstance().Missile_Lock_On();
-	}
-	else
-	{
-		// Not Missile, Clear Lock On List
-		Weapon_Manager::GetInstance().Missile_Lock_On_List_Clear();
-	}
+	// 2. Fire Request Logic
+	bool Is_Firing = M_INPUT->Is_Mouse_Left_Pressed() || (M_INPUT->Controlle_Right_Trigger() > XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
 
-	// 2. Fire Logic
-	bool Is_Firing = KeyLogger_IsMousePressed(LEFT) || (XKeyLogger_GetRightTrigger() > XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
-
-	if (Is_Firing && Fire_Cooldown <= 0.0f)
+	if (Is_Firing)
 	{
-		XMVECTOR V_Player = XMLoadFloat3(&Player_Pos);
-
-		if (Current_Weapon == WeaponType::MACHINE_GUN)
-		{
-			Weapon_Manager::GetInstance().Machine_Gun_Fire(V_Player, Player_ATK);
-		}
-		else if (Current_Weapon == WeaponType::MISSILE)
-		{
-			Weapon_Manager::GetInstance().Missile_Fire(Player_ATK);
-		}
+		Combat_Fire_Request_Data fire_data(Player_Pos, Player_ATK);
+		EventManager::GetInstance().Fire(EventType::Player_Fire_Requested, &fire_data);
 	}
 }

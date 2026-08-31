@@ -22,6 +22,7 @@ enum class Main_Screen
 enum class Sub_Screen
 {
     S_WAIT,
+    STAGE_SELECT,
     SETTINGS,
     S_DONE
 };
@@ -54,6 +55,10 @@ public:
 
     void Update_Game_Select_Screen(Game_Select_Screen Game_Select_Input);
     Game_Select_Screen Get_Current_Game_Select_Screen() const;
+
+	bool Is_Main_Screen_Active() const;
+	bool Is_Sub_Screen_Active() const;
+	bool Is_Pure_In_Game_State() const;
 
     void Apply_Screen_Changes();
 

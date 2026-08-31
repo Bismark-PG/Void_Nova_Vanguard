@@ -66,6 +66,4 @@ void Title_Reset();
 
 void Title_Update(float elapsed_time);
 void Title_Draw();
-
-void Title_Texture();
 #endif // TITLE_H

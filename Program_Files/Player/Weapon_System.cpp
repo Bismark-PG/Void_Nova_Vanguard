@@ -14,6 +14,8 @@
 #include "Bullet_Manager.h"
 #include "Heapler_Logic.h"
 #include "Enemy_Spawner.h"
+#include "Combat_Register.h"
+#include "Event_Manager.h"
 
 using namespace DirectX;
 
@@ -21,6 +23,21 @@ std::vector<LockOn_Data> Weapon_Manager::Locked_Targets;
 
 void Weapon_Manager::Init()
 {
+}
+
+void Weapon_Manager::Update(float dt)
+{
+	if (m_Fire_Cooldown > 0.0f)
+		m_Fire_Cooldown -= dt;
+
+	if (m_Current_Weapon == WeaponType::MISSILE)
+	{
+		Missile_Lock_On();
+	}
+	else
+	{
+		Missile_Lock_On_List_Clear();
+	}
 }
 
 void Weapon_Manager::Missile_Lock_On()
@@ -90,7 +107,6 @@ void Weapon_Manager::Missile_Fire(float Damage)
 		}
 		// End Shoot, Clear List
 		Locked_Targets.clear();
-		Player_Fire_Interval(1.0f);	// Shoot For 1/Sec
 	}
 	else
 	{
@@ -114,32 +130,27 @@ void Weapon_Manager::Missile_Fire(float Damage)
 		XMStoreFloat3(&Dir, V_Dir);
 
 		Bullet_Manager::GetInstance().Fire_Missile(Player_Get_POS(), Dir, Damage * 3, nullptr);
-		Player_Fire_Interval(1.0f);	// Shoot For 1/Sec
 	}
 }
 
 void Weapon_Manager::Machine_Gun_Fire(XMVECTOR V_Player, float Damage)
 {
-	// Shoot Ray In Aim POS
+	// Get Camera POS, AIM POS, And Shoot Ray In Aim POS
 	XMFLOAT3 Cam_POS = Player_Camera_Get_POS();
 	XMVECTOR V_Cam = XMLoadFloat3(&Cam_POS);
 	XMVECTOR V_Aim = XMLoadFloat3(&Player_Get_Aim_POS());
 
-	XMVECTOR V_Cam_To_Aim = XMVector3Normalize(V_Aim - V_Cam);
+	// Get Logical Direction From Camera To Aim
+	XMVECTOR V_Logical_Dir = XMVector3Normalize(V_Aim - V_Cam);
+	XMFLOAT3 Logical_Dir;
+	XMStoreFloat3(&Logical_Dir, V_Logical_Dir);
 
-	float Target_Z = Enemy_Spawner::GetInstance().Get_Z_Depth();// Enemy Spawn Z
-	float Dir_Z = XMVectorGetZ(V_Cam_To_Aim);
-	if (abs(Dir_Z) < 0.0001f) Dir_Z = 0.0001f; // Safety Code For Division 0
+	// Visual Start POS In Player POS
+	XMFLOAT3 Visual_Start;
+	XMStoreFloat3(&Visual_Start, V_Player);
 
-	float Hit_Target = (Target_Z - Cam_POS.z) / Dir_Z;
-	XMVECTOR V_Target3D = V_Cam + V_Cam_To_Aim * Hit_Target;
-
-	XMVECTOR V_Dir = XMVector3Normalize(V_Target3D - V_Player);
-	XMFLOAT3 Dir;
-	XMStoreFloat3(&Dir, V_Dir);
-
-	Bullet_Manager::GetInstance().Fire_Ray(Player_Get_POS(), Dir, Damage);
-	Player_Fire_Interval(0.25f); // Shoot For 4/Sec
+	// Fire Ray
+	Bullet_Manager::GetInstance().Fire_Ray(Visual_Start, Cam_POS, Logical_Dir, Damage);
 }
 
 void Weapon_Manager::Set_Missile_Random_POS(float X, float Y_Min, float Y_Max, float Z)
@@ -153,4 +164,38 @@ void Weapon_Manager::Set_Missile_Random_POS(float X, float Y_Min, float Y_Max, f
 const std::vector<LockOn_Data> Weapon_Manager::Return_Lock_On_List()
 {
 	return Locked_Targets;
+}
+
+void Weapon_Manager::Toggle_Weapon()
+{
+	// Weapon Toggle
+	m_Current_Weapon = (m_Current_Weapon == WeaponType::MACHINE_GUN) ? WeaponType::MISSILE : WeaponType::MACHINE_GUN;
+	Missile_Lock_On_List_Clear();
+
+	// Fire Event For Weapon Change
+	Combat_Weapon_Event_Data combat_data(m_Current_Weapon);
+	EventManager::GetInstance().Fire(EventType::Player_Weapon_Changed, &combat_data);
+}
+
+void Weapon_Manager::Fire_Current_Weapon(const DirectX::XMFLOAT3& Player_Pos, float Damage)
+{
+	// If Cooldown Is Not Ready, Do Nothing
+	if (m_Fire_Cooldown > 0.0f) return;
+
+	XMVECTOR V_Player = XMLoadFloat3(&Player_Pos);
+
+	if (m_Current_Weapon == WeaponType::MACHINE_GUN)
+	{
+		Machine_Gun_Fire(V_Player, Damage);
+		m_Fire_Cooldown = 0.1f;		// Shoot For 10/Sec
+	}
+	else if (m_Current_Weapon == WeaponType::MISSILE)
+	{
+		Missile_Fire(Damage);
+		m_Fire_Cooldown = 1.0f;		// Shoot For 1/Sec
+	}
+
+	// Register Combat Event For Weapon Fire
+	Combat_Weapon_Event_Data combat_data(m_Current_Weapon);
+	EventManager::GetInstance().Fire(EventType::Player_Fired, &combat_data);
 }

@@ -25,6 +25,7 @@ namespace PALETTE
 	static constexpr float R_Two_Pie			= 360.0f;
 
 	// Alpha
+	// 0.0 ~ 0.075
 	static constexpr float A_Zero		   = 0.0f;
 	static constexpr float A_Zero_One	   = 0.01f;
 	static constexpr float A_Zero_O_Five   = 0.015f;
@@ -33,6 +34,8 @@ namespace PALETTE
 	static constexpr float A_Zero_Four	   = 0.04f;
 	static constexpr float A_Zero_Five	   = 0.05f;
 	static constexpr float A_Z_T_Quarters  = 0.075f;
+
+	// 0.1 ~ 0.9
 	static constexpr float A_One_Tenth	   = 0.1f;
 	static constexpr float A_Point_Fifteen = 0.15f;
 	static constexpr float A_Fifth		   = 0.2f;
@@ -52,7 +55,7 @@ namespace PALETTE
 	static constexpr float A_P_Eight_Five  = 0.85f;
 	static constexpr float A_Point_Nine    = 0.9f;
 
-	// Bigger Than One
+	// 1.0 ~ 10.0
 	static constexpr float A_Origin		      = 1.0f;
 	static constexpr float A_One_A_Quarter    = 1.25f;
 	static constexpr float A_One_And_Half     = 1.5f;

@@ -6,10 +6,14 @@
 
 ==============================================================================*/
 #include "Project_Header.h"
+#include "Game_Window.h"
+#include "Fade.h"
+#include "KeyLogger.h"
+#include "system_timer.h"
 #include "Controller_Input.h"
-#include "Audio_Manager.h"
-#include "direct3d.h"
 #include "Shader_Manager.h"
+#include "Event_Manager.h"
+#include "Sound_Register.h"
 
 static int UI_Controller_BG = -1;
 static int UI_Controller_Input = -1;
@@ -18,6 +22,20 @@ static int UI_Controller_Button_Up = -1;
 static int UI_Controller_Button_Down = -1;
 static int UI_Controller_Enter_Up = -1;
 static int UI_Controller_Enter_Down = -1;
+
+static float Alert_BG_X;
+static float Alert_BG_y;
+static float Alert_BG_Width;
+static float Alert_BG_Height;
+
+static float Alert_X;
+static float Alert_y;
+static float Alert_Width;
+static float Alert_Height;
+
+static float Button_X;
+static float Button_y;
+static float Button_Size;
 
 static bool Is_Pressed = false;
 static double Pressed_Time = 0.0f;
@@ -82,14 +100,18 @@ void Controller_Set_Update()
 		{
 			STATE = CONTROLLER_STATE::INPUT;
 			Controller_Setup_State = true;
-			Audio_Manager::GetInstance()->Play_SFX("Controller_Alert");
+
+			Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Controller_Alert);
+			EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
 		}
 
 		if (XKeyLogger_GetControllerDisconnected())
 		{
 			STATE = CONTROLLER_STATE::OUTPUT;
 			Controller_Setup_State = true;
-			Audio_Manager::GetInstance()->Play_SFX("Controller_Alert");
+
+			Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Controller_Alert);
+			EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
 		}
 		break;
 
@@ -98,7 +120,9 @@ void Controller_Set_Update()
 		{
 			Controller_Setup_State = false;
 			STATE = CONTROLLER_STATE::NONE;
-			Audio_Manager::GetInstance()->Play_SFX("Buffer_Denied");
+
+			Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Buffer_Denied);
+			EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
 		}
 
 		if (static_cast<int>(SystemTimer_GetTime() - Pressed_Time) % 2 == 0)
@@ -116,7 +140,9 @@ void Controller_Set_Update()
 		{
 			Controller_Setup_State = false;
 			STATE = CONTROLLER_STATE::NONE;
-			Audio_Manager::GetInstance()->Play_SFX("Buffer_Denied");
+
+			Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Buffer_Denied);
+			EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
 		}
 
 		if (static_cast<int>(SystemTimer_GetTime() - Pressed_Time) % 2 == 0)

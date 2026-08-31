@@ -9,6 +9,12 @@
 #include "System_Logic_Manager.h"
 #include "Main_Header.h"
 #include "Debug_Collision.h"
+#include "Event_Register.h"
+
+#if defined(DEBUG) || defined(_DEBUG)
+#include "Debug_Camera.h"
+static bool Is_Debug_Camera_On = false;
+#endif	
 
 void System_Manager::Initialize(HWND hWnd, ID3D11Device* Device, ID3D11DeviceContext* Context)
 {
@@ -37,7 +43,9 @@ void System_Manager::Initialize(HWND hWnd, ID3D11Device* Device, ID3D11DeviceCon
 
 	// Initialize Game Setting Tools
 	Fade_Initialize();
-	Mouse_UI_set();
+
+	// Initialize Event System
+	Register_All_Events();
 
 	// Initialize Game Logic
 	Enemy_Manager::GetInstance().Init();
@@ -48,7 +56,7 @@ void System_Manager::Initialize(HWND hWnd, ID3D11Device* Device, ID3D11DeviceCon
 	Debug_Camera_Initialize();
 	Debug_Collision_Initialize(Device);
 
-	// Initialize Game Screen Logic
+	// Initialize Game Logic
 	Game_Logic_Initialize();
 }
 
@@ -66,8 +74,25 @@ void System_Manager::Update(double elapsed_time, bool IS_Controller_Set)
 	// When Controller Is Not Set, Update Main Logic (Player, Enemy, etc.)
 	if (!IS_Controller_Set)
 	{
-		// Update Main Logic
+#if defined(DEBUG) || defined(_DEBUG)
+		static bool IS_DEBUG_MODE = false;
+		if (KeyLogger_IsTrigger(KK_F1))
+		{
+			IS_DEBUG_MODE = !IS_DEBUG_MODE;
+		}
+
+		if (IS_DEBUG_MODE)
+		{
+			Debug_Camera_Update(elapsed_time);
+		}
+		else
+		{
+			Game_Logic_Update(elapsed_time);
+		}
+#else
+		// Update Main Logic For Release
 		Game_Logic_Update(elapsed_time);
+#endif
 	}
 }
 
@@ -78,7 +103,7 @@ void System_Manager::Draw(double FPS)
 	Sprite_Begin();
 
 	// Real Draw Start
-	Main_Game_Screen_Update();
+	Main_Game_Screen_Draw_Update();
 
 	// Controller Input Alert
 	Controller_Set_Draw();
@@ -88,7 +113,7 @@ void System_Manager::Draw(double FPS)
 
 #if defined(DEBUG) || defined(_DEBUG)
 	// Draw GUI
-		// Start the Dear ImGui frame
+	// Start the Dear ImGui frame
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();

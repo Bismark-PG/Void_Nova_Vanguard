@@ -21,15 +21,12 @@ void Player_Draw();
 // --- Parameter Setter  ---
 void Player_Set_POS(const DirectX::XMFLOAT3& POS);
 void Player_Damaged(int damage);
-void Player_Fire_Interval(float Interval);
-void Player_Set_Weapon_Mode(WeaponType Type);
 
 // --- Parameter Geter  ---
 const DirectX::XMFLOAT3& Player_Get_POS();
 const DirectX::XMFLOAT3& Player_Get_Aim_POS();
 float Player_Get_HP();
 float Player_Get_MaxHP();
-WeaponType Player_Get_Weapon_Mode();
 
 // --- Debug Function  ---
 void GUI_Set_Player_POS(float x, float y, float z);

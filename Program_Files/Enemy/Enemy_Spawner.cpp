@@ -14,19 +14,41 @@
 #include "Wave_Data.h"
 #include "Player_Camera.h"
 #include "Palette.h"
+#include "Event_Manager.h"
+
 using namespace DirectX;
 using namespace PALETTE;
 
 void Enemy_Spawner::Init()
 {
-    m_GameTime = 0.0f;
-    m_WaveTimers.clear();
-    m_WaveTimers.resize(Wave_Data_Count, 0.0f);
+    m_CooldownTimer = 0.0f;
+    m_Current_Stage = 0;
+    m_Is_Spawning_Done = false;
+    m_Wave_Index = 0;
+    m_Current_Stage_Waves.clear();
 }
 
 void Enemy_Spawner::Reset()
 {
     Init();
+}
+
+void Enemy_Spawner::Start_Stage(int stage)
+{
+    Init();
+    m_Current_Stage = stage;
+
+    // Read Stage Info, And Load Stage Spwan Info
+    auto it = Stage_Data_Map.find(stage);
+
+    if (it != Stage_Data_Map.end())
+    {
+        m_Current_Stage_Waves = it->second;
+    }
+    else
+    {
+        Debug::D_Out << "[Enemy Spawner] Warning : Stage " << stage << " Data Not Found!" << std::endl;
+    }
 }
 
 void Enemy_Spawner::Set_Z_Depth(float depth)
@@ -41,31 +63,55 @@ float Enemy_Spawner::Get_Z_Depth() const
 
 void Enemy_Spawner::Update(float dt)
 {
-    m_GameTime += dt;
+    if (m_Current_Stage <= 0 || m_Is_Spawning_Done) return;
 
-    for (int i = 0; i < Wave_Data_Count; ++i)
+    // Get Alive Enemy
+    bool is_wave_cleared = (Enemy_Manager::GetInstance().Get_Active_Enemy_Count() == 0);
+
+    // Wait For CoolDown
+    if (m_CooldownTimer > 0.0f && !is_wave_cleared)
     {
-        const WaveInfo& wave = Wave_Data[i];
+        m_CooldownTimer -= dt;
+        return;
+    }
 
-        if (m_GameTime >= wave.StartTime && m_GameTime < wave.EndTime)
+    // If Left Spawn Wave, Do Spawn
+    if (m_Wave_Index < m_Current_Stage_Waves.size())
+    {
+        const Wave& current_wave = m_Current_Stage_Waves[m_Wave_Index];
+        float max_cooldown = 0.0f;
+
+        // Spawn All Pattern In Wave Index
+        for (PatternTag p_tag : current_wave)
         {
-            m_WaveTimers[i] -= dt;
+            const Pattern_Info& pattern_info = Get_Pattern_Data(p_tag);
 
-            if (m_WaveTimers[i] <= 0.0f)
+            // Use Most Longest Cool-Time
+            max_cooldown = std::max(max_cooldown, pattern_info.Cooldown);
+
+            // Spawn Logic
+            for (size_t i = 0; i < pattern_info.Enemies.size(); ++i)
             {
-                m_WaveTimers[i] = wave.SpawnInterval;
-
-                for (int count = 0; count < wave.BatchCount; ++count)
-                {
-                    XMFLOAT3 finalPos = Get_Spawn_Position(wave.Type, wave.X_Ratio, count);
-                    Enemy_Manager::GetInstance().Spawn(wave.Type, finalPos);
-                }
+                const auto& enemy_node = pattern_info.Enemies[i];
+                XMFLOAT3 finalPos = Get_Spawn_Position(enemy_node.Type, enemy_node.X_Ratio);
+                Enemy_Manager::GetInstance().Spawn(enemy_node.Type, finalPos);
             }
         }
+
+        // Set CoolTime
+        m_CooldownTimer = max_cooldown;
+        m_Wave_Index++;
+    }
+    // Spawn Done All Wave, No More Enemy, Phase Done
+    else if (is_wave_cleared && !m_Is_Spawning_Done)
+    {
+        m_Is_Spawning_Done = true;
+        EventManager::GetInstance().Fire(EventType::Phase_Spawning_Done);
+        Debug::D_Out << "[Enemy Spawner] Stage " << m_Current_Stage << " Spawning & Cleared Done!" << std::endl;
     }
 }
 
-XMFLOAT3 Enemy_Spawner::Get_Spawn_Position(EnemyType type, float ratio_X, int batchIndex) const
+XMFLOAT3 Enemy_Spawner::Get_Spawn_Position(EnemyType type, float ratio_X) const
 {
     // 1. Get Enemy Type Info
     const Enemy_Info& Info = Get_Enemy_Info(type);
@@ -77,9 +123,6 @@ XMFLOAT3 Enemy_Spawner::Get_Spawn_Position(EnemyType type, float ratio_X, int ba
     float totalWidth = maxX - minX;
 
     float spawnX = minX + (ratio_X * totalWidth);
-
-    // Add Spacing For Each Batch
-    spawnX += (batchIndex * 2.5f);  // 2.5f Is An Arbitrary Walue, Can Be Adjusted
 
 	// 3. Get Y Axis : Get Y Ratio Each Enemy Type
     float limitY_Max = A_Half * Get_Player_Limit_Y_Max();

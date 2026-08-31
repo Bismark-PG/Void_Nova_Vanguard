@@ -50,6 +50,22 @@ Game_Select_Screen Game_Screen_Manager::Get_Current_Game_Select_Screen() const
 	return Current_Game_Screen;
 }
 
+bool Game_Screen_Manager::Is_Main_Screen_Active() const
+{
+	return Current_Main_Screen != Main_Screen::MAIN;
+}
+
+bool Game_Screen_Manager::Is_Sub_Screen_Active() const
+{
+	return Current_Sub_Screen != Sub_Screen::S_WAIT;
+}
+
+bool Game_Screen_Manager::Is_Pure_In_Game_State() const
+{
+	return (Current_Main_Screen == Main_Screen::SELECT_GAME && Current_Sub_Screen == Sub_Screen::S_WAIT &&
+		Current_Game_Screen == Game_Select_Screen::GAME_PLAYING);
+}
+
 void Game_Screen_Manager::Apply_Screen_Changes()
 {
 	Current_Main_Screen = Next_Main_Screen;

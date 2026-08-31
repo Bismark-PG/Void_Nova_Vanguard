@@ -17,6 +17,7 @@
 #include "Main_Menu.h"
 #include "Enemy_Spawner.h"
 #include "Weapon_System.h"
+#include "Setting.h"
 
 using namespace DirectX;
 
@@ -52,10 +53,18 @@ void GUI_Screen_Scene_Editor(double FPS)
     // ==========================================
     if (ImGui::CollapsingHeader("State & Screen Debug", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const char* Main_Screen_Names[] = { "M_WAIT", "MAIN", "MENU_SELECT", "SELECT_GAME", "SELECT_SETTINGS", "EXIT", "M_DONE" };
-        const char* Sub_Screen_Names[] = { "S_WAIT", "SETTINGS", "S_DONE" };
-        const char* Game_Select_Names[] = { "G_WAIT", "GAME_MENU_SELECT", "GAME_PLAYING", "GAME_IN_GAME_MENU", "GAME_SETTING", "G_DONE" };
-        const char* Main_Buffer_Names[] = { "None", "Wait", "Start", "Setting", "Exit", "Done" };
+        const char* Main_Screen_Names[]
+            = { "M_WAIT", "MAIN", "MENU_SELECT", "SELECT_GAME", "SELECT_SETTINGS", "EXIT", "M_DONE" };
+        const char* Sub_Screen_Names[]
+            = { "S_WAIT", "STAGE_SELECT", "SETTINGS", "S_DONE" };
+        const char* Game_Select_Names[]
+            = { "G_WAIT", "GAME_MENU_SELECT", "GAME_PLAYING", "GAME_IN_GAME_MENU", "GAME_SETTING", "G_DONE" };
+        const char* Main_Buffer_Names[]
+            = { "None", "Wait", "Start", "Setting", "Exit", "Done" };
+        const char* Setting_Buffer_Names[]
+            = { "None", "Wait", "BGM", "SFX", "WinMode", "FullMode", "Back"};
+        const char* Edit_Buffer_Names[]
+            = { "None", "BGM", "SFX" };
 
         int Current_Main = static_cast<int>(Game_Screen_Manager::GetInstance()->Get_Current_Main_Screen());
         if (ImGui::Combo("Main Screen", &Current_Main, Main_Screen_Names, IM_ARRAYSIZE(Main_Screen_Names)))
@@ -77,10 +86,22 @@ void GUI_Screen_Scene_Editor(double FPS)
 
         ImGui::Separator();
 
-        int Current_Buffer = static_cast<int>(Get_Main_Menu_Buffer());
-        if (ImGui::Combo("Main Buffer", &Current_Buffer, Main_Buffer_Names, IM_ARRAYSIZE(Main_Buffer_Names)))
+        int Current_Main_Buffer = static_cast<int>(Get_Main_Menu_Buffer());
+        if (ImGui::Combo("Main Buffer", &Current_Main_Buffer, Main_Buffer_Names, IM_ARRAYSIZE(Main_Buffer_Names)))
         {
-            Set_Main_Menu_Buffer(static_cast<Main_Select_Buffer>(Current_Buffer));
+            Set_Main_Menu_Buffer(static_cast<Main_Select_Buffer>(Current_Main_Buffer));
+        }
+
+        int Current_Setting_Buffer = static_cast<int>(Get_Setting_Menu_Buffer());
+        if (ImGui::Combo("Setting Buffer", &Current_Setting_Buffer, Setting_Buffer_Names, IM_ARRAYSIZE(Setting_Buffer_Names)))
+        {
+            Set_Setting_Menu_Buffer(static_cast<Setting_Select_Buffer>(Current_Setting_Buffer));
+        }
+
+        int Current_Sound_Buffer = static_cast<int>(Get_Setting_Edit_Buffer());
+        if (ImGui::Combo("Edit Buffer", &Current_Sound_Buffer, Edit_Buffer_Names, IM_ARRAYSIZE(Edit_Buffer_Names)))
+        {
+            Set_Setting_Edit_Buffer(static_cast<Setting_Edit_State>(Current_Sound_Buffer));
         }
     }
     ImGui::End();

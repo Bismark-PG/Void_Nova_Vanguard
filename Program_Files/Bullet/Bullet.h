@@ -70,5 +70,6 @@ protected:
     int m_Damage = 10;
     float m_Visual_Speed = 0.0f;
     float m_Alive_Timer = 0.0f;
+    float m_Destroy_Z_Axis = -10.0f;
 };
 #endif // BULLET_H

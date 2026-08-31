@@ -9,15 +9,15 @@
 #define MOUSE_H
 #pragma once
 
-// マウスモード
+// Mouse Position Mode
 typedef enum Mouse_PositionMode_tag
 {
-    MOUSE_POSITION_MODE_ABSOLUTE, // 絶対座標モード
-    MOUSE_POSITION_MODE_RELATIVE, // 相対座標モード
+	MOUSE_POSITION_MODE_ABSOLUTE, // Absolute coordinate mode
+	MOUSE_POSITION_MODE_RELATIVE, // Relative coordinate mode
 } Mouse_PositionMode;
 
 
-// マウス状態構造体
+// Mouse State Info
 typedef struct MouseState_tag
 {
     bool leftButton;
@@ -31,37 +31,27 @@ typedef struct MouseState_tag
     Mouse_PositionMode positionMode;
 } Mouse_State;
 
-struct Mouse_Info
-{
-    float X, Y, Size;
-    float Prev_X, Prev_Y;
-};
-
-// マウスモジュールの初期化
+// Init
 void Mouse_Initialize(HWND window);
-
-// マウスモジュールの終了処理
 void Mouse_Finalize(void);
 
-// マウスの状態を取得する
+// Mouse State Getter
 void Mouse_GetState(Mouse_State* pState);
 
-// 累積したマウススクロールホイール値をリセットする
+// Scroll Wheel Value Reset
 void Mouse_ResetScrollWheelValue(void);
 
-// マウスのポジションモードを設定する（デフォルトは絶対座標モード）
+// Mouse Position Mode Setter
 void Mouse_SetMode(Mouse_PositionMode mode);
 
-// マウスの接続を検出する
+// Connection Check
 bool Mouse_IsConnected(void);
 
-// マウスカーソルが表示されているか確認する
+// Visibility Control
 bool Mouse_IsVisible(void);
-
-// マウスカーソル表示を設定する
 void Mouse_SetVisible(bool visible);
 
-// マウス制御のためのウィンドウメッセージプロシージャフック関数
+// Mouse Message Process For Window Message Procedure
 void Mouse_ProcessMessage(UINT message, WPARAM wParam, LPARAM lParam);
 
 // Debug Tools
@@ -70,20 +60,14 @@ void Debug_Mode_Set();
 
 // Mouse POS Check And Draw
 bool Is_Mouse_In_RECT(float mx, float my, float x, float y, float w, float h);
-bool Is_Mouse_Moved();
-void Return_Mouse_Movement();
-void Mouse_UI_Draw(Mouse_Info Info);
-Mouse_State Mouse_Get_Prev_State(Mouse_Info& Info);
-bool Mouse_State_Reset();
-void Mouse_UI_set();
 
-// 導入方法
+// How To Use This Mouse Input Manager
 //
-// 対象のウィンドウが生成されたらそのウィンドウハンドルを引数に初期化関数を呼ぶ
+// If the window is created, call the initialization function with the window handle as an argument.
 //
 // Mouse_Initialize(hwnd);
 //
-// ウィンドウメッセージプロシージャからマウス制御用フック関数を呼び出す
+// Mouse input manager will automatically process mouse input messages from the window message procedure.
 //
 // LResult CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 // {

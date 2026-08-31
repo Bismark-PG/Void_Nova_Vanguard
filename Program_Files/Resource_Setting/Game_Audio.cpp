@@ -39,16 +39,21 @@ void Game_Audio_Finalize()
 void Game_Audio_BGM()
 {
 	//------------------------------Main BGM------------------------------//
+	Sound_M->Load_BGM("Title", "Resource/BGM/Title.wav");
 }
 
 void Game_Audio_SFX()
 {
 	//--------------------------------Intro SFX--------------------------------//
-	Sound_M->Load_SFX("Intro_Loading", "Resource/SFX/Intro_Start.wav");
+	Sound_M->Load_SFX("Intro_Loading",		"Resource/SFX/Intro_Start.wav");
 	Sound_M->Load_SFX("Intro_Glitch_Sound", "Resource/SFX/Intro_Glitch.wav");
-	Sound_M->Load_SFX("Intro_Flare", "Resource/SFX/Intro_Flare.wav");
+	Sound_M->Load_SFX("Intro_Flare",		"Resource/SFX/Intro_Flare.wav");
 
 	//-------------------------------Buffer SFX-------------------------------//
+	Sound_M->Load_SFX("Buffer_Move", "Resource/SFX/Buffer_Move.wav");
+	Sound_M->Load_SFX("Buffer_Select", "Resource/SFX/Buffer_Select.wav");
+	Sound_M->Load_SFX("Buffer_Back", "Resource/SFX/Buffer_Back.wav");
+	Sound_M->Load_SFX("Buffer_Denied", "Resource/SFX/Buffer_Denied.wav");
 
 	//--------------------------------Enemy SFX--------------------------------//
 

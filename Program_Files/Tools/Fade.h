@@ -12,6 +12,7 @@
 #include "Debug_ostream.h"
 #include "direct3d.h"
 #include "sprite.h"
+#include "Sprite_Animation.h"
 #include "Texture_Manager.h"
 using namespace PALETTE;
 
