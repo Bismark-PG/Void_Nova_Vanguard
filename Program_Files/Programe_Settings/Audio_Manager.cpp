@@ -77,6 +77,8 @@ public:
     {
         IXAudio2SourceVoice* pSourceVoice = (IXAudio2SourceVoice*)pBufferContext;
 
+        if (pSourceVoice == nullptr) return;
+
 		// Remove from Active Voices
         {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -366,6 +368,15 @@ void Audio_Manager::Stop_BGM(const std::string& name)
     {
         Debug::D_Out << "[Audio Manager] Stop BGM : " << name << std::endl;
         Find->second.Source->Stop();
+        Find->second.Source->FlushSourceBuffers();
+    }
+
+    for (auto it = Active_BGM_Layers.begin(); it != Active_BGM_Layers.end(); )
+    {
+        if (it->Name == name)
+            it = Active_BGM_Layers.erase(it);
+        else
+            ++it;
     }
 
     if (name == Now_Playing_BGM_Name)

@@ -12,6 +12,51 @@
 #include "Event_Types.h"
 #include "Weapon_System.h"
 
+// Enum For Game Difficulty
+enum class GameDifficulty
+{
+    Easy,
+    Normal,
+    Hard
+};
+
+// Class For Manage Difficulty
+class Difficulty_Manager
+{
+public:
+	static Difficulty_Manager& GetInstance()
+	{
+		static Difficulty_Manager instance;
+		return instance;
+	}
+
+	// Control Difficulty
+	void Set_Difficulty(GameDifficulty diff) { m_Difficulty = diff; }
+	GameDifficulty Get_Difficulty() const { return m_Difficulty; }
+	float Get_Difficulty_Ratio() const
+	{
+		switch (m_Difficulty)
+		{
+		case GameDifficulty::Easy:   return 0.5f;
+		case GameDifficulty::Normal: return 1.0f;
+		case GameDifficulty::Hard:   return 2.0f;
+		}
+
+		return 1.0f; // Default
+	}
+
+private:
+	Difficulty_Manager() = default;
+	~Difficulty_Manager() = default;
+
+	Difficulty_Manager(const Difficulty_Manager&) = delete;
+	Difficulty_Manager& operator=(const Difficulty_Manager&) = delete;
+
+	GameDifficulty m_Difficulty = GameDifficulty::Normal;
+};
+
+//----------------------------------------------------------------
+
 // Weapon Change Event Data
 struct Combat_Weapon_Event_Data : public EventData
 {

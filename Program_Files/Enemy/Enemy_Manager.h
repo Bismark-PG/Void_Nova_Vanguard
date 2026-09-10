@@ -9,6 +9,7 @@
 #define ENEMY_MANAGER_H
 
 #include "Enemy.h"
+#include "Enemy_Type.h"
 #include <vector>
 
 class Enemy_Manager
@@ -28,13 +29,10 @@ public:
 
 	void draw();
 
-	void Spawn(EnemyType type, const DirectX::XMFLOAT3& spawnPos);
+	void Spawn(EnemyType type, const DirectX::XMFLOAT3& spawnPos, EvadeDirection evadeDir);
 	int Get_Active_Enemy_Count() const;
 
-	std::vector<Enemy*>& Get_Active_List()
-	{ 
-		return m_ActiveList;
-	}
+	std::vector<Enemy*>& Get_Active_List() { return m_ActiveList; }
 
 	// AABB Collision Check for Enemy
 	Enemy* Check_Collision_AABB(const AABB& box);

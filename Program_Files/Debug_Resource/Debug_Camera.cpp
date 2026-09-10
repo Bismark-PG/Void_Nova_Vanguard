@@ -76,7 +76,7 @@ void Debug_Camera_Update(double elapsed_time)
 		POS -= Horizon * Debug_Camera_Move_Speed * Time;
 	if (KeyLogger_IsPressed(KK_D))
 		POS += Horizon * Debug_Camera_Move_Speed * Time;
-
+		
 	// UP and DOWN
 	if (KeyLogger_IsPressed(KK_SPACE))
 	{

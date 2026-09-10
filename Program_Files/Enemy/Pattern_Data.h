@@ -26,6 +26,7 @@ struct Pattern_Enemy_Node
 {
     EnemyType Type;
     float X_Ratio;
+    EvadeDirection E_Dir;
 };
 
 struct Pattern_Info
@@ -38,16 +39,16 @@ struct Pattern_Info
 static const std::unordered_map<PatternTag, Pattern_Info> Pattern_Map =
 {
     // Pattern Tag, Cool-Time, Spawn Enemy Type, Spawn X Axis Ratio
-    { PatternTag::Pattern_1, { 2.0f, { {EnemyType::ENEMY_NORMAL, 0.5f} } } },
+    { PatternTag::Pattern_1, { 2.0f, { {EnemyType::ENEMY_NORMAL, 0.5f, EvadeDirection::Up} } }},
 
-    { PatternTag::Pattern_2, { 2.0f, { {EnemyType::ENEMY_NORMAL, 0.8f} } } },
+    { PatternTag::Pattern_2, { 2.0f, { {EnemyType::ENEMY_NORMAL, 0.8f, EvadeDirection::Right} } } },
 
-    { PatternTag::Pattern_3, { 2.0f, { {EnemyType::ENEMY_NORMAL, 0.2f} } } },
+    { PatternTag::Pattern_3, { 2.0f, { {EnemyType::ENEMY_NORMAL, 0.2f, EvadeDirection::Left} } } },
 
     { PatternTag::Pattern_4, { 5.0f, {
-        {EnemyType::ENEMY_NORMAL, 0.25f},
-        {EnemyType::ENEMY_NORMAL, 0.5f},
-        {EnemyType::ENEMY_NORMAL, 0.75f}
+        {EnemyType::ENEMY_NORMAL, 0.25f, EvadeDirection::Left},
+        {EnemyType::ENEMY_NORMAL, 0.5f,  EvadeDirection::Up},
+        {EnemyType::ENEMY_NORMAL, 0.75f, EvadeDirection::Right}
     } } }
 };
 

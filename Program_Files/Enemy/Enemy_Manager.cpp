@@ -78,13 +78,13 @@ void Enemy_Manager::draw()
 	}
 }
 
-void Enemy_Manager::Spawn(EnemyType type, const DirectX::XMFLOAT3& spawnPos)
+void Enemy_Manager::Spawn(EnemyType type, const DirectX::XMFLOAT3& spawnPos, EvadeDirection Dir)
 {
     for (Enemy* e : m_EnemyPool)
     {
         if (!e->IsActive())
         {
-            e->Activate(spawnPos, type);
+            e->Activate(spawnPos, type, Dir);
             return;
         }
     }

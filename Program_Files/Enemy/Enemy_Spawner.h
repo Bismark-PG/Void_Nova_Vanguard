@@ -31,6 +31,8 @@ public:
     void Set_Z_Depth(float depth);
     float Get_Z_Depth() const;
 
+    void Add_Spawner_Cooldown(float time);
+
 private:
     Enemy_Spawner() = default;
     ~Enemy_Spawner() = default;

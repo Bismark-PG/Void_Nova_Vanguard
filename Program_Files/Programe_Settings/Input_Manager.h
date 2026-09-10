@@ -40,6 +40,8 @@ public:
 	//						   Combat							//
 	// ---------------------------------------------------------//
 	bool Is_Weapon_Changed() const;
+	bool Is_Player_Dodged() const;
+	bool Is_Player_Overload() const;
 
 	// ---------------------------------------------------------//
 	//						Mouse Input							//

@@ -17,7 +17,7 @@ using namespace DirectX;
 int Enemy::Global_ID_Counter = 0;
 int Enemy_Normal::Normal_TexID = -1;
 
-void Enemy::Activate(const XMFLOAT3& pos, EnemyType type)
+void Enemy::Activate(const XMFLOAT3& pos, EnemyType type, EvadeDirection Dir)
 {
 	m_IsActive = true;
 	Position = pos;

@@ -66,6 +66,32 @@ void Bullet_Manager::Reset()
     m_Active_List.clear();
 }
 
+void Bullet_Manager::Clear_Enemy_Bullets()
+{
+    for (Bullet* B : m_Enemy_Pool)
+    {
+        if (B->IsActive()) B->Deactivate();
+    }
+}
+
+void Bullet_Manager::Clear_ALL_Bullets()
+{
+    for (Bullet* B : m_Ray_Pool)
+    {
+        if (B->IsActive()) B->Deactivate();
+    }
+
+    for (Bullet* B : m_Missile_Pool)
+    {
+        if (B->IsActive()) B->Deactivate();
+    }
+
+    for (Bullet* B : m_Enemy_Pool)
+    {
+        if (B->IsActive()) B->Deactivate();
+    }
+}
+
 void Bullet_Manager::Update(float Elapsed_Time)
 {
     m_Active_List.clear();

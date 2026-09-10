@@ -61,6 +61,11 @@ float Enemy_Spawner::Get_Z_Depth() const
     return m_Spawn_Base_Z;
 }
 
+void Enemy_Spawner::Add_Spawner_Cooldown(float time)
+{
+    m_CooldownTimer += time;
+}
+
 void Enemy_Spawner::Update(float dt)
 {
     if (m_Current_Stage <= 0 || m_Is_Spawning_Done) return;
@@ -94,7 +99,7 @@ void Enemy_Spawner::Update(float dt)
             {
                 const auto& enemy_node = pattern_info.Enemies[i];
                 XMFLOAT3 finalPos = Get_Spawn_Position(enemy_node.Type, enemy_node.X_Ratio);
-                Enemy_Manager::GetInstance().Spawn(enemy_node.Type, finalPos);
+                Enemy_Manager::GetInstance().Spawn(enemy_node.Type, finalPos, enemy_node.E_Dir);
             }
         }
 

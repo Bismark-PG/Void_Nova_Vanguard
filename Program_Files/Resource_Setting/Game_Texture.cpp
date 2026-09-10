@@ -54,7 +54,12 @@ void Game_Texture_Load()
     Texture_M->Load("Player_Top_Right",     L"Resource/Texture/Player/Player_Top_R.png");
    
     //---------------------In Game : Enemy Texture---------------------//
-    Texture_M->Load("Enemy", L"Resource/Texture/Other/HP.png");
+    Texture_M->Load("Enemy_Normal", L"Resource/Texture/Enemy/Enemy_Normal.png");
+
+    //---------------------In Game : Bullet Texture---------------------//
+    Texture_M->Load("Bullet_Enemy_Normal", L"Resource/Texture/Bullet/Bullet_Orange.png");
+    Texture_M->Load("Bullet_Player_Machine_Gun", L"Resource/Texture/Bullet/Bullet_Machine_Gun.png");
+    Texture_M->Load("Bullet_Player_Missile", L"Resource/Texture/Bullet/Bullet_Missile.png");
 
     //---------------------In Game : Effect Texture---------------------//
     Texture_M->Load("Effect_Explosion", L"Resource/Texture/Animation/Explosion.png");

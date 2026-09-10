@@ -39,7 +39,10 @@ void Game_Audio_Finalize()
 void Game_Audio_BGM()
 {
 	//------------------------------Main BGM------------------------------//
-	Sound_M->Load_BGM("Title", "Resource/BGM/Title.wav");
+	Sound_M->Load_BGM("Main_BGM", "Resource/BGM/Main_Title.wav");
+	
+	//------------------------------Main BGM------------------------------//
+	Sound_M->Load_BGM("Stage_1", "Resource/BGM/Stage_1_Tense_Tactics_Loop.wav");
 }
 
 void Game_Audio_SFX()
@@ -58,6 +61,8 @@ void Game_Audio_SFX()
 	//--------------------------------Enemy SFX--------------------------------//
 
 	//-------------------------------Player SFX-------------------------------//
+	Sound_M->Load_SFX("Player_Dodge", "Resource/SFX/Player_Dodge.wav");
+	Sound_M->Load_SFX("Player_Overload", "Resource/SFX/Player_Overload.wav");
 
 	//-------------------------------Weopon SFX-------------------------------//
 	

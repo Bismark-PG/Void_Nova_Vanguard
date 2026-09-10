@@ -18,7 +18,7 @@ public:
 	virtual ~Enemy() = default;
 
 	// --- Pulling System ---
-	virtual void Activate(const DirectX::XMFLOAT3& pos, EnemyType type);
+	virtual void Activate(const DirectX::XMFLOAT3& pos, EnemyType type, EvadeDirection Dir);
 	virtual void Deactivate();
 	bool IsActive() const { return m_IsActive; }
 

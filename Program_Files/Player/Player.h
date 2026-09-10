@@ -27,6 +27,12 @@ const DirectX::XMFLOAT3& Player_Get_POS();
 const DirectX::XMFLOAT3& Player_Get_Aim_POS();
 float Player_Get_HP();
 float Player_Get_MaxHP();
+bool Player_Is_Dead();
+AABB Player_Get_AABB();
+
+// --- Combat System ---
+void Player_Change_Overload_Count(bool is_increase);
+int Player_Get_Overload_Count();
 
 // --- Debug Function  ---
 void GUI_Set_Player_POS(float x, float y, float z);

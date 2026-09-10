@@ -41,6 +41,7 @@ enum class EventType
 	// Combet State Event
     Player_Weapon_Changed,
     Player_Fired,
+    Player_Overload_Triggered,
     Visual_Hit_Effect,
 
     // Combet Action Request Event (Player >> Weapon Manager)

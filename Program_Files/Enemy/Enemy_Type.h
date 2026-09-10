@@ -12,6 +12,14 @@ enum class EnemyType
 	ENEMY_NORMAL,
 };
 
+enum class EvadeDirection
+{
+	Left,
+	Right,
+	Up,
+	None
+};
+
 struct Enemy_Info
 {
 	EnemyType Type;
@@ -32,7 +40,7 @@ static const Enemy_Info Enemy_Normal_Info
 {	// Enemy Type
 	EnemyType::ENEMY_NORMAL,
 	// HP, Max_HP, Speed, Scale, Bullet_Size, Bullet_Speed
-	10, 10, 10.0f, 1.0f, 1.0f, 10.0f,
+	10, 10, 25.0f, 3.0f, 2.5f, 10.0f,
 	//Collision_Damage, Bullet_Damage
 	1, 2,
 	// Spawn_Y_Ratio

@@ -15,6 +15,7 @@
 enum class Sound_BGM_Tag
 {
     Main,
+    Stage_1,
 };
 
 
@@ -32,7 +33,11 @@ enum class Sound_SFX_Tag
     Buffer_Move,
     Buffer_Select,
     Buffer_Back,
-    Buffer_Denied
+    Buffer_Denied,
+
+	// Player SFX
+	Player_Dodge,
+	Player_Overload,
 };
 
 // Sound Event Data
@@ -63,7 +68,8 @@ inline std::string Get_BGM_String(Sound_BGM_Tag tag)
 {
     switch (tag)
     {
-    case Sound_BGM_Tag::Main:                   return "Intro_Loading";
+    case Sound_BGM_Tag::Main:                   return "Main_BGM";
+    case Sound_BGM_Tag::Stage_1:                 return "Stage_1";
     default:                                    return "";
     }
 }
@@ -85,6 +91,10 @@ inline std::string Get_SFX_String(Sound_SFX_Tag tag)
     case Sound_SFX_Tag::Buffer_Select:          return "Buffer_Select";
     case Sound_SFX_Tag::Buffer_Back:            return "Buffer_Back";
     case Sound_SFX_Tag::Buffer_Denied:          return "Buffer_Denied";
+
+		// Player SFX
+    case Sound_SFX_Tag::Player_Dodge:           return "Player_Dodge";
+    case Sound_SFX_Tag::Player_Overload:        return "Player_Overload";
     default:                                    return "";
     }
 }

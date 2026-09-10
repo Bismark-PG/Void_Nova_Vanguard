@@ -303,6 +303,8 @@ void Shader_Manager::Begin_Billboard()
     m_context->PSSetConstantBuffers(0, 1, m_cbDiffuseColorPS.GetAddressOf()); // PS b0 - Diffuse Color
 
     m_context->PSSetSamplers(0, 1, m_sampler_Linear.GetAddressOf());
+
+    SetAlphaBlend(true);
 }
 
 void Shader_Manager::SetUVParameter(const UV_Parameter& parameter)

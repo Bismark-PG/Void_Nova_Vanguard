@@ -16,6 +16,7 @@
 
 // Manager Include
 #include "KeyLogger.h"
+#include "Enemy_Manager.h"
 #include "Shader_Manager.h"
 #include "Light_Manager.h"
 #include "Audio_Manager.h"
@@ -66,6 +67,14 @@ void Scene_Change_Event_Register()
     // Event For Change Tatle To Main Menu Scene
     Event_Manager.Subscribe(EventType::Go_From_Title_To_Main_Menu, [](EventData*) {
         Game_Screen_Manager::GetInstance()->Change_Screen(Main_Screen::MENU_SELECT, Sub_Screen::S_WAIT, Game_Select_Screen::G_WAIT);
+
+		// Control Audio
+        Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Buffer_Back);
+        EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+
+        Sound_BGM_Event_Data bgm_data(Sound_BGM_Tag::Main);
+        EventManager::GetInstance().Fire(EventType::Play_Audio_BGM, &bgm_data);
+
         Debug::D_Out << "[Event System] Event Triggered : Go To Main Menu" << std::endl;
         });
 
@@ -81,7 +90,12 @@ void Scene_Change_Event_Register()
         // Target Stage Init
         Enemy_Spawner::GetInstance().Start_Stage(target_stage);
 
+		// Set Mouse Mode
         Mouse_SetVisible(false);
+
+		// Control Audio
+        Sound_BGM_Event_Data bgm_data(Sound_BGM_Tag::Stage_1);
+        EventManager::GetInstance().Fire(EventType::Play_Audio_BGM, &bgm_data);
 
         Debug::D_Out << "[Event System] Event Triggered : Game Start, Stage : " << target_stage << std::endl;
         });
@@ -94,6 +108,10 @@ void Scene_Change_Event_Register()
         Set_Main_Menu_Buffer(Main_Select_Buffer::None);
         Mouse_SetMode(MOUSE_POSITION_MODE_ABSOLUTE);
         Mouse_SetVisible(true);
+
+		// Control Audio
+        Sound_BGM_Event_Data bgm_data(Sound_BGM_Tag::Main);
+        EventManager::GetInstance().Fire(EventType::Play_Audio_BGM, &bgm_data);
 
         Debug::D_Out << "[Event System] Event Triggered : Go From In Game To Main Menu" << std::endl;
         });
@@ -294,6 +312,25 @@ void Combat_Event_Register()
                 Debug::D_Out << "[Event System] Weapon Fired. Weapon Info : Missile" << std::endl;
             }
         }
+        });
+
+	// Event For Player Overload Triggered
+    Event_Manager.Subscribe(EventType::Player_Overload_Triggered, [](EventData*) {
+
+		// Kiil All Enemies
+        auto& E_list = Enemy_Manager::GetInstance().Get_Active_List();
+        for (auto* e : E_list)
+        {
+            e->Deactivate();
+        }
+
+		// Delete All Enemy Bullets
+        Bullet_Manager::GetInstance().Clear_Enemy_Bullets();
+
+		// Set Cooldown For Enemy Spawner
+        Enemy_Spawner::GetInstance().Add_Spawner_Cooldown(1.0f);
+
+        Debug::D_Out << "[Combat] OVERLOAD Triggered! All enemies cleared." << std::endl;
         });
 
 	// Event For Enemy Hit Visual Effect

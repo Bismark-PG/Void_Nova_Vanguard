@@ -84,6 +84,16 @@ bool Input_Manager::Is_Weapon_Changed() const
 	return KeyLogger_IsTrigger(KK_E) || XKeyLogger_IsPadTrigger(XINPUT_GAMEPAD_Y);
 }
 
+bool Input_Manager::Is_Player_Dodged() const
+{
+	return KeyLogger_IsTrigger(KK_LEFTSHIFT) || XKeyLogger_IsPadTrigger(XINPUT_GAMEPAD_LEFT_SHOULDER);
+}
+
+bool Input_Manager::Is_Player_Overload() const
+{
+	return KeyLogger_IsTrigger(KK_SPACE) || XKeyLogger_IsPadTrigger(XINPUT_GAMEPAD_RIGHT_SHOULDER);
+}
+
 // ---------------------------------------------------------//
 //						Mouse Input							//
 // ---------------------------------------------------------//

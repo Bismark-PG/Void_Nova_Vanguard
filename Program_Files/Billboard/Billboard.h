@@ -30,6 +30,7 @@ void Billboard_Draw(int Tex_ID, const DirectX::XMFLOAT3& POS, float Scale_X, flo
 	Billboard_Facing facing = Billboard_Facing::ALL_AXIS);
 
 void Billboard_Draw_Animation(int PlayID, const DirectX::XMFLOAT3& POS, float Scale_X, float Scale_Y,
+	const DirectX::XMFLOAT4& Color = { 1.0f, 1.0f, 1.0f, 1.0f },
 	Billboard_Facing facing = Billboard_Facing::ALL_AXIS);
 
 #endif // BILLBOARD_H

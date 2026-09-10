@@ -23,6 +23,8 @@ public:
     void Init();
     void Final();
     void Reset();
+    void Clear_Enemy_Bullets();
+    void Clear_ALL_Bullets();
 
     void Update(float Elapsed_Time);
     void Draw();
@@ -33,6 +35,7 @@ public:
 
     // Enemy Fire
     void Fire_Enemy_Bullet(const DirectX::XMFLOAT3& Start_Pos, const DirectX::XMFLOAT3& Dir, float speed, int Damage);
+
 
 private:
     Bullet_Manager() = default;

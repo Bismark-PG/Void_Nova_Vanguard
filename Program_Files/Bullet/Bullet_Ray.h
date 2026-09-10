@@ -76,7 +76,7 @@ public:
     {
         if (!m_IsActive) return;
 
-        int texID = Texture_Manager::GetInstance()->GetID("Debug_Circle");
+        int texID = Texture_Manager::GetInstance()->GetID("Bullet_Player_Machine_Gun");
         Billboard_Draw(texID, m_Position, 0.2f, 0.2f, { 0.5f, 0.5f }, { 1.0f, 0.8f, 0.0f, 1.0f });
     }
 

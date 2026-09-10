@@ -136,14 +136,14 @@ void Billboard_Draw(int Tex_ID, const XMFLOAT3& POS, float Scale_X, float Scale_
 	Billboard_Draw_Internal(Tex_ID, POS, Scale_X, Scale_Y, Pivot, UV, Color, facing);
 }
 
-void Billboard_Draw_Animation(int PlayID, const XMFLOAT3 & POS, float Scale_X, float Scale_Y, 
-	Billboard_Facing facing)
+void Billboard_Draw_Animation(int PlayID, const XMFLOAT3& POS, float Scale_X, float Scale_Y,
+	const XMFLOAT4& Color, Billboard_Facing facing)
 {
 	int texID = -1;
 	UV_Parameter UV = {};
 
 	if (SpriteAni_Get_Current_UV(PlayID, texID, UV.scale, UV.translation))
 	{
-		Billboard_Draw_Internal(texID, POS, Scale_X, Scale_Y, { 0.5f, 0.5f }, UV, White, facing);
+		Billboard_Draw_Internal(texID, POS, Scale_X, Scale_Y, { 0.5f, 0.5f }, UV, Color, facing);
 	}
 }
