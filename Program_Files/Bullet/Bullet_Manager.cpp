@@ -9,7 +9,7 @@
 #include "Bullet_Manager.h"
 #include "Bullet_Ray.h"
 #include "Bullet_Missile.h"
-#include "Bullet_Enemy.h":
+#include "Bullet_Enemy.h"
 
 void Bullet_Manager::Init()
 {

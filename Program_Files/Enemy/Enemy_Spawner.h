@@ -26,6 +26,7 @@ public:
     void Update(float dt);
     void Reset();
 
+	void Set_Stage(int stage);
     void Start_Stage(int stage);
 
     void Set_Z_Depth(float depth);
@@ -50,7 +51,7 @@ private:
     bool m_Is_Spawning_Done = false;
 
     // Stage Wave Info
-    std::vector<Wave> m_Current_Stage_Waves;    // Copy Index For Wave List
-    size_t m_Wave_Index = 0;                    // For Current Wave List
+    Stage_Waves m_Current_Stage_Waves;  // Copy Index For Wave List
+    size_t m_Wave_Index = 0;            // For Current Wave List
 };
 #endif // ENEMY_SPAWNER_H

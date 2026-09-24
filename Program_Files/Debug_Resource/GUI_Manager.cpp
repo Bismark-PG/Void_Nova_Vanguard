@@ -43,6 +43,27 @@ void GUI_Final()
     ImGui::DestroyContext();
 }
 
+void Draw_GUI_Editor(double FPS)
+{
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+    ImGui::GetIO().MouseDrawCursor = true;
+
+    // ==========================================
+    // Game Scene Editor
+    GUI_Screen_Scene_Editor(FPS);
+
+    // Player, Camera Editor
+    GUI_Player_Editor();
+    // ==========================================
+
+    // Draw End
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
 void GUI_Screen_Scene_Editor(double FPS)
 {
     ImGui::Begin("Screen Debug Menu");
@@ -109,84 +130,118 @@ void GUI_Screen_Scene_Editor(double FPS)
 
 void GUI_Player_Editor()
 {
-    ImGui::Begin("Player Debug Menu");
+    ImGui::Begin("Player & Camera Information");
 
-    // ==========================================
-    //           [Player Camera Debug]
-    // ==========================================
-    if (ImGui::CollapsingHeader("Camera & World Illusion Setup", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::BeginTabBar("PlayerInfoTabs"))
     {
-        // 1. Camera Base Position
-        static float Cam_Pos_X = 0.0f, Cam_Pos_Y = 2.0f, Cam_Pos_Z = -10.0f;
-        ImGui::Text("Camera Anchor Position X");
-        bool CX = ImGui::SliderFloat("##CamPosX", &Cam_Pos_X, -20.0f, 20.0f);
-        ImGui::Text("Camera Anchor Position Y");
-        bool CY = ImGui::SliderFloat("##CamPosY", &Cam_Pos_Y, -10.0f, 20.0f);
-        ImGui::Text("Camera Anchor Position Z");
-        bool CZ = ImGui::SliderFloat("##CamPosZ", &Cam_Pos_Z, -30.0f, -1.0f);
-        if (CX || CY || CZ) GUI_Set_Camera_Base_Pos(Cam_Pos_X, Cam_Pos_Y, Cam_Pos_Z);
+        // ==========================================
+        //          Player Parameters Viewer
+        // ==========================================
+        if (ImGui::BeginTabItem("Information"))
+        {
+            // --- Player POS And Info ---
+            XMFLOAT3 pPos = Player_Get_POS();
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "[ Player Position ]");
+            ImGui::Text("X : %.2f, Y : %.2f, Z : %.2f", pPos.x, pPos.y, pPos.z);
+            ImGui::Separator();
 
-        ImGui::Separator();
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "[ Player Info ]");
+            const char* aliveState = Player_Is_Dead() ? "Dead" : "Alive";
+            ImGui::Text("State : %s", aliveState);
+            ImGui::Text("HP : %.0f / %.0f", Player_Get_HP(), Player_Get_MaxHP());
+            ImGui::Text("Energy : %.0f / %.0f", Player_Get_Energy(), Player_Get_Max_Energy());
+            ImGui::Text("Life : (Not Implemented)");
+            ImGui::Text("Overload Charges : %d", Player_Get_Overload_Count());
+            ImGui::Spacing();
+            ImGui::Separator();
 
-        // 2. Camera Max Rotations
-        static float Max_Pitch = 20.0f, Max_Yaw = 15.0f, Max_Roll = 15.0f;
-        ImGui::Text("Max Pitch (Up/Down)");
-        bool Pitch = ImGui::SliderFloat("##MaxPitch", &Max_Pitch, 0.0f, 45.0f);
-        ImGui::Text("Max Yaw (Left/Right Pan)");
-        bool Yaw = ImGui::SliderFloat("##MaxYaw", &Max_Yaw, 0.0f, 45.0f);
-        ImGui::Text("Max Roll (Banking)");
-        bool Roll = ImGui::SliderFloat("##MaxRoll", &Max_Roll, 0.0f, 45.0f);
-        if (Pitch || Yaw || Roll) GUI_Set_Max_Camera_Rotations(Max_Pitch, Max_Yaw, Max_Roll);
+            // --- Player Camera Info ---
+            XMFLOAT3 cPos = Player_Camera_Get_POS();
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[ Camera Position ]");
+            ImGui::Text("X : %.2f, Y : %.2f, Z : %.2f", cPos.x, cPos.y, cPos.z);
+            ImGui::Separator();
 
-        static float Camera_Lerp_Speed = 5.0f;
-        ImGui::Text("Camera Rotation Speed (Lerp)");
-        if (ImGui::SliderFloat("##CamLerp", &Camera_Lerp_Speed, 1.0f, 20.0f))
-            GUI_Set_Camera_Lerp_Speed(Camera_Lerp_Speed);
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.4f, 1.0f), "[ Camera Info ]");
+            // Rotation (Yaw, Pitch, Roll)
+            ImGui::Text("Rotation -> Yaw: %.2f, Pitch: %.2f, Roll: %.2f",
+                Get_Player_Camera_Yaw(), Get_Player_Camera_Pitch(), Get_Player_Camera_Roll());
+            ImGui::Text("Limit -> Near Z: 0.10, Far Z: %.2f", Player_Camera_Get_Far_Z());
+            ImGui::Spacing();
+            ImGui::Separator();
 
-        ImGui::Separator();
+            // --- Player AIM Info ---
+            XMFLOAT3 aPos = Player_Get_Aim_POS();
+            ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[ Aim Info ]");
+            ImGui::Text("Mouse Sensitivity : %.4f", Get_Mouse_Sensitivity());
+            ImGui::Text("Aim POS -> X: %.2f, Y: %.2f, Z: %.2f", aPos.x, aPos.y, aPos.z);
+            ImGui::Spacing();
+            ImGui::Separator();
 
-        // 3. Player Position
-        static float Player_Pos_X = 0.0f, Player_Pos_Y = 0.0f, Player_Pos_Z = 0.0f;
-        ImGui::Text("Player Position X");
-        bool PX = ImGui::SliderFloat("##POSX", &Player_Pos_X, -15.0f, 15.0f);
-        ImGui::Text("Player Position Y");
-        bool PY = ImGui::SliderFloat("##POSY", &Player_Pos_Y, 0.0f, 10.0f);
-        ImGui::Text("Player Position Z");
-        bool PZ = ImGui::SliderFloat("##POSZ", &Player_Pos_Z, -5.0f, 5.0f);
-        if (PX || PY || PZ) GUI_Set_Player_POS(Player_Pos_X, Player_Pos_Y, Player_Pos_Z);
+            // --- Game Info ---
+            ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[ Game Info ]");
+            ImGui::Text("(Editing Now)");
 
-        ImGui::Separator();
+            ImGui::EndTabItem();
+        }
 
-        // 4. Player Movement Limits
-        static float Limit_X = 15.0f, Limit_Y_Min = 0.0f, Limit_Y_Max = 10.0f;
-        ImGui::Text("Player Limit X (Width)");
-        bool LX = ImGui::SliderFloat("##LimitX", &Limit_X, 1.0f, 50.0f);
-        ImGui::Text("Player Limit Y Min (Ground)");
-        bool LY_Min = ImGui::SliderFloat("##LimitYMin", &Limit_Y_Min, -20.0f, 0.0f);
-        ImGui::Text("Player Limit Y Max (Sky)");
-        bool LY_Max = ImGui::SliderFloat("##LimitYMax", &Limit_Y_Max, 0.0f, 30.0f);
-        if (LX || LY_Min || LY_Max) GUI_Set_Player_Limits(Limit_X, Limit_Y_Min, Limit_Y_Max);
+        // ==========================================
+		//          Player Parameters Editor
+        // ==========================================
+        if (ImGui::BeginTabItem("Editor"))
+        {
+            // --- Camera Base Position ---
+            static float Cam_Pos_X = 0.0f, Cam_Pos_Y = 2.0f, Cam_Pos_Z = -10.0f;
+            ImGui::Text("Camera Anchor Position X, Y, Z");
+            bool CX = ImGui::SliderFloat("##CamPosX", &Cam_Pos_X, -20.0f, 20.0f);
+            bool CY = ImGui::SliderFloat("##CamPosY", &Cam_Pos_Y, -10.0f, 20.0f);
+            bool CZ = ImGui::SliderFloat("##CamPosZ", &Cam_Pos_Z, -30.0f, -1.0f);
+            if (CX || CY || CZ) GUI_Set_Camera_Base_Pos(Cam_Pos_X, Cam_Pos_Y, Cam_Pos_Z);
+            ImGui::Separator();
 
-        ImGui::Separator();
+            // --- Camera Max Rotations ---
+            static float Max_Pitch = 20.0f, Max_Yaw = 15.0f, Max_Roll = 15.0f;
+            ImGui::Text("Max Rotations (Pitch, Yaw, Roll)");
+            bool Pitch = ImGui::SliderFloat("##MaxPitch", &Max_Pitch, 0.0f, 45.0f);
+            bool Yaw = ImGui::SliderFloat("##MaxYaw", &Max_Yaw, 0.0f, 45.0f);
+            bool Roll = ImGui::SliderFloat("##MaxRoll", &Max_Roll, 0.0f, 45.0f);
+            if (Pitch || Yaw || Roll) GUI_Set_Max_Camera_Rotations(Max_Pitch, Max_Yaw, Max_Roll);
 
-        // 5. Enemy Spawner Z
-        static float Spawn_Z = 150.0f;
-        ImGui::Text("Enemy Spawn Z POS");
-        if (ImGui::SliderFloat("##SpawnZ", &Spawn_Z, 50.0f, 300.0f))
-            Enemy_Spawner::GetInstance().Set_Z_Depth(Spawn_Z);
+            static float Camera_Lerp_Speed = 5.0f;
+            ImGui::Text("Camera Rotation Speed (Lerp)");
+            if (ImGui::SliderFloat("##CamLerp", &Camera_Lerp_Speed, 1.0f, 20.0f))
+                GUI_Set_Camera_Lerp_Speed(Camera_Lerp_Speed);
+            ImGui::Separator();
 
-        // 6. Player Missile Random Logic
-        static float X = 2.0f, Y_Min = 0.5f, Y_Max = 2.0f, Z = 1.0f;
-        ImGui::Text("Missile Ratio X");
-        bool MX = ImGui::SliderFloat("##RatioX", &X, 1.0f, 5.0f);
-        ImGui::Text("Missile Range Y Min");
-        bool MY_Min = ImGui::SliderFloat("##RangeYMin", &Y_Min, 0.0f, 1.0f);
-        ImGui::Text("Missile Range Y Man");
-        bool MY_Max = ImGui::SliderFloat("##RangeYMax", &Y_Max, 1.0f, 5.0f);
-        ImGui::Text("Missile Start Z POS");
-        bool MZ = ImGui::SliderFloat("##StartZ", &Z, 0.0f, 10.0f);
-        if (MX || MY_Min || MY_Max || MZ) 
-            Weapon_Manager::GetInstance().Set_Missile_Random_POS(X, MY_Min, MY_Max, MZ);
+            // --- Player Movement Limits ---
+            static float Limit_X = 15.0f, Limit_Y_Min = 0.0f, Limit_Y_Max = 10.0f;
+            ImGui::Text("Player Limit (Width, Ground, Sky)");
+            bool LX = ImGui::SliderFloat("##LimitX", &Limit_X, 1.0f, 50.0f);
+            bool LY_Min = ImGui::SliderFloat("##LimitYMin", &Limit_Y_Min, -20.0f, 0.0f);
+            bool LY_Max = ImGui::SliderFloat("##LimitYMax", &Limit_Y_Max, 0.0f, 30.0f);
+            if (LX || LY_Min || LY_Max) GUI_Set_Player_Limits(Limit_X, Limit_Y_Min, Limit_Y_Max);
+            ImGui::Separator();
+
+            // --- Enemy Spawner Z ---
+            static float Spawn_Z = 150.0f;
+            ImGui::Text("Enemy Spawn Z POS");
+            if (ImGui::SliderFloat("##SpawnZ", &Spawn_Z, 50.0f, 300.0f))
+                Enemy_Spawner::GetInstance().Set_Z_Depth(Spawn_Z);
+
+            // --- Player Missile Random Logic ---
+            static float X = 2.0f, Y_Min = 0.5f, Y_Max = 2.0f, Z = 1.0f;
+            ImGui::Text("Missile Launch Parameters (X Ratio, Y Min/Max, Start Z)");
+            bool MX = ImGui::SliderFloat("##RatioX", &X, 1.0f, 5.0f);
+            bool MY_Min = ImGui::SliderFloat("##RangeYMin", &Y_Min, 0.0f, 1.0f);
+            bool MY_Max = ImGui::SliderFloat("##RangeYMax", &Y_Max, 1.0f, 5.0f);
+            bool MZ = ImGui::SliderFloat("##StartZ", &Z, 0.0f, 10.0f);
+            if (MX || MY_Min || MY_Max || MZ)
+                Weapon_Manager::GetInstance().Set_Missile_Random_POS(X, MY_Min, MY_Max, MZ);
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
     }
+
     ImGui::End();
 }

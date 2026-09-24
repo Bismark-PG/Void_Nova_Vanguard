@@ -34,6 +34,9 @@ public:
         m_Hit_Enemy     = false;
         m_Hit_Wall      = false;
 
+        // It AABB Box Will Be Bigger Than Step Size For Empty Space
+		m_Radius        = m_Step_Size * 0.8f;
+
 		// Get Hit Point Immediately using Ray Marching (Logical Ray-Marching)
         Calculate_Hit_Point(Logical_Start, Logical_Dir);
 
@@ -61,6 +64,15 @@ public:
 
         if (Dist_To_Target <= (m_Visual_Speed * Elapsed_Time))
         {
+            // If Bullet Is Hittind Enemy
+            if (m_Hit_Enemy && m_Target_Enemy != nullptr && m_Target_Enemy->IsActive() 
+                && m_Target_Enemy->GetUniqueID() == m_Target_Enemy_ID)
+            {
+				// Enemy Gets Damage
+                m_Target_Enemy->OnDamage(m_Damage);
+            }
+
+			// Bullet Hit Effect
             Spawn_Hit_Effect();
             Deactivate();
         }
@@ -81,10 +93,15 @@ public:
     }
 
 private:
+	// --- Ray Marching Parameters ---
     float m_Max_Range = 150.0f;
     float m_Step_Size = 0.5f;
     bool m_Hit_Enemy = false;
     bool m_Hit_Wall = false;
+
+	// --- Target Enemy Info ---
+    Enemy* m_Target_Enemy = nullptr;
+    int m_Target_Enemy_ID = -1;
 
 	// Ray Casting To Calculate Hit Point Immediately Upon Firing
     void Calculate_Hit_Point(const XMFLOAT3& Start_P, const XMFLOAT3& Dir_V)
@@ -97,28 +114,29 @@ private:
         XMVECTOR V_End_Pos = Ray_Pos + Ray_Dir * m_Max_Range;
         XMStoreFloat3(&m_Target_Position, V_End_Pos);
 
-        // It AABB Box Will Be Bigger Than Step Size For Empty Space
-        float Check_Radius = m_Step_Size * 0.8f;
-
         while (Now_Dist < m_Max_Range)
         {
             XMFLOAT3 Check_Pos;
             XMStoreFloat3(&Check_Pos, Ray_Pos);
 
-            AABB Ray_AABB = {
-                { Check_Pos.x + Check_Radius, Check_Pos.y + Check_Radius, Check_Pos.z + Check_Radius },
-                { Check_Pos.x - Check_Radius, Check_Pos.y - Check_Radius, Check_Pos.z - Check_Radius }
+            AABB Ray_AABB =
+            {
+                { Check_Pos.x + m_Radius, Check_Pos.y + m_Radius, Check_Pos.z + m_Radius },
+                { Check_Pos.x - m_Radius, Check_Pos.y - m_Radius, Check_Pos.z - m_Radius }
             };
 
 			// If Player's Bullet, Check Enemy Collision
             if (m_Owner == BulletOwner::PLAYER)
             {
                 Enemy* Hit_Enemy = Enemy_Manager::GetInstance().Check_Collision_AABB(Ray_AABB);
-                if (Hit_Enemy != nullptr)
+
+				// If Enemy Is Alive, Save Target Info, Do Not Apply Damage 
+                if (Hit_Enemy != nullptr && !Hit_Enemy->IsDead())
                 {
-					// Give Damage To Enemy
-                    Hit_Enemy->OnDamage(m_Damage);
+                    Debug::D_Out << "[Bullet Ray] Player Bullet Was Hit Enemy" << std::endl;
                     m_Hit_Enemy = true;
+                    m_Target_Enemy = Hit_Enemy;
+                    m_Target_Enemy_ID = Hit_Enemy->GetUniqueID();
                     XMStoreFloat3(&m_Target_Position, Ray_Pos);
                     break;
                 }

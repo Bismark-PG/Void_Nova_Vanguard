@@ -21,6 +21,13 @@ using namespace PALETTE;
 
 void Enemy_Spawner::Init()
 {
+    Reset();
+
+    Wave_Data_Manager::GetInstance().Load_Wave_CSV("Resource/Data/Wave_Data.csv");
+}
+
+void Enemy_Spawner::Reset()
+{
     m_CooldownTimer = 0.0f;
     m_Current_Stage = 0;
     m_Is_Spawning_Done = false;
@@ -28,26 +35,26 @@ void Enemy_Spawner::Init()
     m_Current_Stage_Waves.clear();
 }
 
-void Enemy_Spawner::Reset()
+void Enemy_Spawner::Set_Stage(int stage)
 {
-    Init();
+    m_Current_Stage = stage;
 }
 
 void Enemy_Spawner::Start_Stage(int stage)
 {
-    Init();
-    m_Current_Stage = stage;
+    Reset();
+    Set_Stage(stage);
 
     // Read Stage Info, And Load Stage Spwan Info
-    auto it = Stage_Data_Map.find(stage);
+    const Stage_Waves* waves = Wave_Data_Manager::GetInstance().Get_Stage_Waves(stage);
 
-    if (it != Stage_Data_Map.end())
+    if (waves)
     {
-        m_Current_Stage_Waves = it->second;
+        m_Current_Stage_Waves = *waves;
     }
     else
     {
-        Debug::D_Out << "[Enemy Spawner] Warning : Stage " << stage << " Data Not Found!" << std::endl;
+        Debug::D_Out << "[Enemy Spawner] Warning : Stage " << stage << " Data Not Found in CSV!" << std::endl;
     }
 }
 
@@ -71,10 +78,10 @@ void Enemy_Spawner::Update(float dt)
     if (m_Current_Stage <= 0 || m_Is_Spawning_Done) return;
 
     // Get Alive Enemy
-    bool is_wave_cleared = (Enemy_Manager::GetInstance().Get_Active_Enemy_Count() == 0);
+    bool Is_Wave_Cleared = (Enemy_Manager::GetInstance().Get_Active_Enemy_Count() == 0);
 
     // Wait For CoolDown
-    if (m_CooldownTimer > 0.0f && !is_wave_cleared)
+    if (m_CooldownTimer > 0.0f && !Is_Wave_Cleared)
     {
         m_CooldownTimer -= dt;
         return;
@@ -83,32 +90,60 @@ void Enemy_Spawner::Update(float dt)
     // If Left Spawn Wave, Do Spawn
     if (m_Wave_Index < m_Current_Stage_Waves.size())
     {
-        const Wave& current_wave = m_Current_Stage_Waves[m_Wave_Index];
-        float max_cooldown = 0.0f;
+        const Wave& Current_Wave = m_Current_Stage_Waves[m_Wave_Index];
+        float Max_Cooldown = 0.0f;
+        bool Is_End_Triggered = false;
 
         // Spawn All Pattern In Wave Index
-        for (PatternTag p_tag : current_wave)
+        for (int Pattern_Num : Current_Wave)
         {
-            const Pattern_Info& pattern_info = Get_Pattern_Data(p_tag);
-
-            // Use Most Longest Cool-Time
-            max_cooldown = std::max(max_cooldown, pattern_info.Cooldown);
-
-            // Spawn Logic
-            for (size_t i = 0; i < pattern_info.Enemies.size(); ++i)
+			// If Pattern Number is 999, Trigger End Phase
+            if (Pattern_Num == 999)
             {
-                const auto& enemy_node = pattern_info.Enemies[i];
-                XMFLOAT3 finalPos = Get_Spawn_Position(enemy_node.Type, enemy_node.X_Ratio);
-                Enemy_Manager::GetInstance().Spawn(enemy_node.Type, finalPos, enemy_node.E_Dir);
+                Is_End_Triggered = true;
+                break;
             }
+			// If Pattern Number is 0, Trigger Boss Phase
+            else if (Pattern_Num == 0)
+            {
+                Debug::D_Out << "[Enemy Spawner] BOSS Phase Triggered!" << std::endl;
+				// Need Boss Spawn Logic
+				Max_Cooldown = std::max(Max_Cooldown, 10.0f); // Set Cooldown For Boss Phase (Debug, 10 Sec)
+                continue;
+            }
+
+			// Spawn Logic For Each Pattern
+            PatternTag Pattern_T = static_cast<PatternTag>(Pattern_Num - 1);
+            const Pattern_Info& Pattern_Info = Get_Pattern_Data(Pattern_T);
+            Max_Cooldown = std::max(Max_Cooldown, Pattern_Info.Cooldown);
+
+            for (size_t i = 0; i < Pattern_Info.Enemies.size(); ++i)
+            {
+                const auto& Enemy_Node = Pattern_Info.Enemies[i];
+                XMFLOAT3 POS = Get_Spawn_Position(Enemy_Node.Type, Enemy_Node.X_Ratio);
+                Enemy_Manager::GetInstance().Spawn(Enemy_Node.Type, POS, Enemy_Node.E_Dir);
+            }
+        }
+        
+        // Wave Done
+        if (Is_End_Triggered)
+        {
+			// If All Enemy Cleared, Trigger Phase Done Event
+            if (Is_Wave_Cleared)
+            {
+                m_Is_Spawning_Done = true;
+                EventManager::GetInstance().Fire(EventType::Phase_Spawning_Done);
+                Debug::D_Out << "[Enemy Spawner] Stage " << m_Current_Stage << " Spawning & Cleared Done!" << std::endl;
+            }
+            return;
         }
 
         // Set CoolTime
-        m_CooldownTimer = max_cooldown;
+        m_CooldownTimer = Max_Cooldown;
         m_Wave_Index++;
     }
     // Spawn Done All Wave, No More Enemy, Phase Done
-    else if (is_wave_cleared && !m_Is_Spawning_Done)
+    else if (Is_Wave_Cleared && !m_Is_Spawning_Done)
     {
         m_Is_Spawning_Done = true;
         EventManager::GetInstance().Fire(EventType::Phase_Spawning_Done);

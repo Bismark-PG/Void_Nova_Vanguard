@@ -53,7 +53,7 @@ void Weapon_Manager::Missile_Lock_On()
 	XMVECTOR V_Aim = XMLoadFloat3(&Player_Get_Aim_POS());
 	XMVECTOR V_RayDir = XMVector3Normalize(V_Aim - V_Cam);
 
-	XMFLOAT3 RayDir;
+	XMFLOAT3 RayDir = {};
 	XMStoreFloat3(&RayDir, V_RayDir);
 
 	if (RayDir.z > 0.0001f) // If Look Forward
@@ -63,11 +63,11 @@ void Weapon_Manager::Missile_Lock_On()
 			if (Locked_Targets.size() >= MAX_LOCK_ON) break; // Limit Max Size
 
 			// Already Lock On, Do Pass
-			bool already_locked = false;
+			bool Already_Locked = false;
 			for (const LockOn_Data& L : Locked_Targets) {
-				if (L.Target_ID == E->GetUniqueID()) { already_locked = true; break; }
+				if (L.Target_ID == E->GetUniqueID()) { Already_Locked = true; break; }
 			}
-			if (already_locked) continue;
+			if (Already_Locked) continue;
 
 			// When Z Is Same To Enemy, Get Aim POS
 			XMFLOAT3 E_Pos = E->GetPosition();
@@ -76,8 +76,7 @@ void Weapon_Manager::Missile_Lock_On()
 			float Hit_Y = Cam_Pos.y + RayDir.y * Hit_T;
 
 			// If In Radius, Lock On
-			float Lock_Radius = 4.0f; // Can Change Lock On Radius
-			if (abs(Hit_X - E_Pos.x) < Lock_Radius && abs(Hit_Y - E_Pos.y) < Lock_Radius)
+			if (abs(Hit_X - E_Pos.x) < LOCK_ON_MAX_RADIUS && abs(Hit_Y - E_Pos.y) < LOCK_ON_MAX_RADIUS)
 			{
 				// Save Lock On Data With Enemy Pointer And Enemy ID
 				Locked_Targets.push_back({ E, E->GetUniqueID() });
@@ -103,7 +102,7 @@ void Weapon_Manager::Missile_Fire(float Damage)
 			float Random_Y = RandomFloatRange(Random_Y_Range_MIN, Random_Y_Range_MAX);
 			XMFLOAT3 Start_Dir = { Random_X, Random_Y, Missile_Z_Start_POS };
 
-			Bullet_Manager::GetInstance().Fire_Missile(Player_Get_POS(), Start_Dir, Damage * 3, L.Target_Ptr);
+			Bullet_Manager::GetInstance().Fire_Missile(Player_Get_POS(), Start_Dir, static_cast<int>(Damage * MISSILE_DAMAGE_MULTIPLIER), L.Target_Ptr);
 		}
 		// End Shoot, Clear List
 		Locked_Targets.clear();
@@ -126,10 +125,10 @@ void Weapon_Manager::Missile_Fire(float Damage)
 		XMVECTOR V_Target3D = V_Cam + V_Cam_To_Aim * Hit_Target;
 
 		XMVECTOR V_Dir = XMVector3Normalize(V_Target3D - V_Player);
-		XMFLOAT3 Dir;
+		XMFLOAT3 Dir = {};
 		XMStoreFloat3(&Dir, V_Dir);
 
-		Bullet_Manager::GetInstance().Fire_Missile(Player_Get_POS(), Dir, Damage * 3, nullptr);
+		Bullet_Manager::GetInstance().Fire_Missile(Player_Get_POS(), Dir, static_cast<int>(Damage * MISSILE_DAMAGE_MULTIPLIER), nullptr);
 	}
 }
 
@@ -142,15 +141,15 @@ void Weapon_Manager::Machine_Gun_Fire(XMVECTOR V_Player, float Damage)
 
 	// Get Logical Direction From Camera To Aim
 	XMVECTOR V_Logical_Dir = XMVector3Normalize(V_Aim - V_Cam);
-	XMFLOAT3 Logical_Dir;
+	XMFLOAT3 Logical_Dir = {};
 	XMStoreFloat3(&Logical_Dir, V_Logical_Dir);
 
 	// Visual Start POS In Player POS
-	XMFLOAT3 Visual_Start;
+	XMFLOAT3 Visual_Start = {};
 	XMStoreFloat3(&Visual_Start, V_Player);
 
 	// Fire Ray
-	Bullet_Manager::GetInstance().Fire_Ray(Visual_Start, Cam_POS, Logical_Dir, Damage);
+	Bullet_Manager::GetInstance().Fire_Ray(Visual_Start, Cam_POS, Logical_Dir, static_cast<int>(Damage));
 }
 
 void Weapon_Manager::Set_Missile_Random_POS(float X, float Y_Min, float Y_Max, float Z)
@@ -186,13 +185,24 @@ void Weapon_Manager::Fire_Current_Weapon(const DirectX::XMFLOAT3& Player_Pos, fl
 
 	if (m_Current_Weapon == WeaponType::MACHINE_GUN)
 	{
+		if (!Player_Consume_Energy(ENERGY_AMOUNT_MACHINE_GUN)) return;
+
 		Machine_Gun_Fire(V_Player, Damage);
-		m_Fire_Cooldown = 0.1f;		// Shoot For 10/Sec
+		m_Fire_Cooldown = COOLDOWN_MACHINE_GUN;		// Shoot For 10/1 Sec
 	}
 	else if (m_Current_Weapon == WeaponType::MISSILE)
 	{
+		float Energy_Amount = ENERGY_AMOUNT_MISSILE;
+
+		if (!Locked_Targets.empty())
+		{
+			Energy_Amount = Locked_Targets.size() * Energy_Amount;
+		}
+
+		if (!Player_Consume_Energy(Energy_Amount)) return;
+
 		Missile_Fire(Damage);
-		m_Fire_Cooldown = 1.0f;		// Shoot For 1/Sec
+		m_Fire_Cooldown = COOLDOWN_MISSILE;		// Shoot For 1/3 Sec
 	}
 
 	// Register Combat Event For Weapon Fire

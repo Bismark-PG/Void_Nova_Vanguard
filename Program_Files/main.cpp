@@ -6,8 +6,8 @@
 	Project Name : Void Nova - Vanguard
 
 	Author : Choi HyungJoon
-	Date : 2026. 08. 21 ~ Ing
-	Version : Alpha Ver.5
+	Date : 2026. 07. 12 ~ Ing
+	Version : Alpha
 	Note : Add In-Game Details, UI Layout Adjustment, Make Look Like A "Game"
 
 	Version List : 
@@ -26,6 +26,11 @@
 			Date : 2026. 08. 21
 			Version : Alpha Ver.4
 			Note : Enemy Spawn Logic Modularization, Make Main/Setting/In-Game Menu UI
+
+			Date : 2026. 09. 19
+			Version : Alpha Ver.5
+			Note : Change Enemy Spawn Data To CSV File
+				   Main Menu, Setting Menu Draw Parameter Encapsulation
 
 ==============================================================================*/
 #include "Project_Header.h"

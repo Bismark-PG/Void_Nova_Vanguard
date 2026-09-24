@@ -85,6 +85,24 @@ static std::vector<AfterImageNode> m_AfterImages;
 static constexpr float AFTERIMAGE_MAX_LIFE = 0.25f;  // Life Time For Afterimage
 static constexpr float AFTERIMAGE_INTERVAL = 0.075f; // Interval For Afterimage Creation
 
+// Player Energy State
+enum class EnergyState
+{
+	FULL,
+	CONSUMING,
+	COOLDOWN,
+	RECOVERING,
+	OVERHEATED
+};
+static EnergyState E_State = EnergyState::FULL;
+
+// Energy resource
+static float Player_Energy = 100.0f;
+static float Player_Max_Energy = 100.0f;
+static float Energy_Recovery_Delay = 0.0f;
+static constexpr float ENERGY_RECOVERY_RATE = 20.0f;
+static constexpr float ENERGY_COOLDOWN_TIME = 1.0f;
+
 // Overload resource
 static int Overload_Count = 3;
 static float Overload_Cooldown_Timer = 0.0f;
@@ -123,6 +141,7 @@ static void Player_Update_Aim_Input(float dt);
 static void Player_Update_Weapon_Logic(float dt);
 static void Player_Update_Dodge_Logic(float dt);
 static void Player_Update_Overload_Logic();
+static void Player_Update_Energy_Logic(float dt);
 
 // ----------------------------------------------------------
 
@@ -136,8 +155,11 @@ void Player_Initialize()
 	P_State = PlayerState::Normal;
 	Player_HP = Player_MaxHP;
 
-	float ScreenW = static_cast<float>(Direct3D_GetBackBufferWidth());
-	float ScreenH = static_cast<float>(Direct3D_GetBackBufferHeight());
+	Player_Energy = Player_Max_Energy;
+	E_State = EnergyState::FULL;
+
+	// float ScreenW = static_cast<float>(Direct3D_GetBackBufferWidth());
+	// float ScreenH = static_cast<float>(Direct3D_GetBackBufferHeight());
 
 	// Player_Size.x = ScreenW * 0.1;
 	// Player_Size.y = ScreenW * 0.1;
@@ -173,6 +195,9 @@ void Player_Update(float elapsed_time)
 	//						Player Combat Update
 	// ----------------------------------------------------------------
 	
+	// Energy Update
+	Player_Update_Energy_Logic(elapsed_time);
+
 	// Aim Update
 	XMVECTOR Target_Aim = XMLoadFloat3(&Aim_Pos);
 	Player_Update_Aim_Input(elapsed_time);
@@ -211,6 +236,7 @@ void Player_Draw()
 	{
 		// If Player Is Invincible Or Dodging, Set Alpha To 0.75f
 		XMFLOAT4 Color = Alpha_Origin;
+
 		if (Invincible_Timer > 0.0f || Dodge_Timer > 0.0f) { Color = Alpha_T_Quarter; }
 
 		Billboard_Draw(ID, Player_Pos, Player_Size.x, Player_Size.y, { 0.5f, 0.5f }, Color);
@@ -243,7 +269,8 @@ void Player_Damaged(int damage)
 	}
 	else
 	{
-		// When Damaged, Set Invincible Timer
+		Player_Camera_Shake(0.1f, 0.5f);
+
 		Invincible_Timer = INVINCIBLE_TIME;
 	}
 }
@@ -308,6 +335,49 @@ void Player_Change_Overload_Count(bool is_increase)
 int Player_Get_Overload_Count()
 {
 	return Overload_Count;
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+//													Energy System
+// ----------------------------------------------------------------------------------------------------------------
+
+
+float Player_Get_Energy()
+{
+	return Player_Energy;
+}
+
+float Player_Get_Max_Energy()
+{
+	return Player_Max_Energy;
+}
+
+EnergyState Player_Get_Energy_State()
+{
+	return E_State;
+}
+
+bool Player_Consume_Energy(float amount)
+{
+	// If Player Has Enough Energy, Consume It And Return True
+	if (Player_Energy >= amount)
+	{
+		Player_Energy -= amount;
+		E_State = EnergyState::CONSUMING;
+		return true;
+	}
+	// If Player Does Not Have Enough Energy, Return False
+	else
+	{
+		// Overheat
+		Player_Energy = 0.0f;
+		E_State = EnergyState::OVERHEATED;
+
+		// Need Denied Sound
+		Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Buffer_Denied);
+		EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+		return false;
+	}
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -413,15 +483,26 @@ XMVECTOR Player_Movement_Update(float dt, XMVECTOR Current_Pos)
 		// Check Dodge Input
 		if (M_INPUT->Is_Player_Dodged() && Dodge_Timer <= 0.0f)
 		{
-			Dodge_Timer = DODGE_INVINCIBLE;
-			// If Have Input Movement, Dodge In That Direction
-			// If Not, Move No Where
-			Dodge_Dir = Is_Input_Moving ? Move_Dir : XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+			// Dodge Is Only Available If Player Has Enough Energy
+			if (Player_Energy >= 5.0f)
+			{
+				Player_Energy -= 5.0f;
+				// If Energy Is Full, Change To Recovering State After Dodge
+				if (E_State == EnergyState::FULL)
+				{
+					E_State = EnergyState::RECOVERING;
+				}
 
-			Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Player_Dodge);
-			EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+				Dodge_Timer = DODGE_INVINCIBLE;
+				// If Have Input Movement, Dodge In That Direction
+				// If Not, Move No Where
+				Dodge_Dir = Is_Input_Moving ? Move_Dir : XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 
-			return Current_Pos;
+				Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Player_Dodge);
+				EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+
+				return Current_Pos;
+			}
 		}
 
 		if (Is_Input_Moving)
@@ -627,7 +708,7 @@ void Player_Update_Aim_Input(float dt)
 
 void Player_Update_Weapon_Logic(float dt)
 {
-	// Weapon Change Request Logic
+	// 1.  Weapon Change Request Logic
 	if (M_INPUT->Is_Weapon_Changed())
 	{
 		EventManager::GetInstance().Fire(EventType::Player_Weapon_Change_Requested);
@@ -636,7 +717,17 @@ void Player_Update_Weapon_Logic(float dt)
 	// 2. Fire Request Logic
 	bool Is_Firing = M_INPUT->Is_Mouse_Left_Pressed() || (M_INPUT->Controlle_Right_Trigger() > XINPUT_GAMEPAD_TRIGGER_THRESHOLD);
 
-	if (Is_Firing)
+	if (!Is_Firing)
+	{
+		// If Fireing Or Overheated, Enter Cooldown State
+		if (E_State == EnergyState::CONSUMING || E_State == EnergyState::OVERHEATED)
+		{
+			E_State = EnergyState::COOLDOWN;
+			Energy_Recovery_Delay = ENERGY_COOLDOWN_TIME;
+		}
+	}
+	// If Fire Triggered And Not Overheated, Fire Weapon
+	else if (E_State != EnergyState::OVERHEATED)
 	{
 		Combat_Fire_Request_Data fire_data(Player_Pos, Player_ATK);
 		EventManager::GetInstance().Fire(EventType::Player_Fire_Requested, &fire_data);
@@ -675,5 +766,40 @@ void Player_Update_Overload_Logic()
 
 		Sound_SFX_Event_Data sfx_data(Sound_SFX_Tag::Player_Overload);
 		EventManager::GetInstance().Fire(EventType::Play_Audio_SFX, &sfx_data);
+	}
+}
+
+void Player_Update_Energy_Logic(float dt)
+{
+	switch (E_State)
+	{
+	case EnergyState::FULL:
+		Player_Energy = Player_Max_Energy;
+		break;
+
+	case EnergyState::CONSUMING:
+		// Do Not Recover Energy While Consuming (Fire Weapon)
+		break;
+
+	case EnergyState::COOLDOWN:
+		Energy_Recovery_Delay -= dt;
+		if (Energy_Recovery_Delay <= 0.0f)
+		{
+			E_State = EnergyState::RECOVERING;
+		}
+		break;
+
+	case EnergyState::RECOVERING:
+		Player_Energy += ENERGY_RECOVERY_RATE * dt;
+		if (Player_Energy >= Player_Max_Energy)
+		{
+			Player_Energy = Player_Max_Energy;
+			E_State = EnergyState::FULL;
+		}
+		break;
+
+	case EnergyState::OVERHEATED:
+		// Overheat State, If Player Releases Trigger, Enter Cooldown State
+		break;
 	}
 }

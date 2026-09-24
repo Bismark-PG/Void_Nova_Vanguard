@@ -28,6 +28,12 @@ static float Camera_Base_X = 0.0f;
 static float Camera_Base_Y = 2.0f;
 static float Camera_Base_Z = -10.0f;    // Default Camera POS
 
+// Shack Parameters
+static float Shake_Duration  = 0.0f;
+static float Shake_Initial_Duration = 0.0f;
+static float Shake_Magnitude = 0.0f;
+static bool Is_Camera_Shaking = false;
+
 // Sensitivity
 static float Mouse_Sensitivity = 0.005f; // Base Setting (From Option)
 static float Apply_Sensitivity = 0.005f; // Real used value
@@ -54,10 +60,16 @@ static float Player_Limit_X     = 15.0f;
 static float Player_Limit_Y_Min = 0.0f; // Ground
 static float Player_Limit_Y_Max = 10.0f;  // Sky
 
+// ----------------------------------------------------------
+//				static Player Update Logic
+// ----------------------------------------------------------
+static void Do_A_Shake(XMVECTOR& POS, float dt);
+// ----------------------------------------------------------
 void Player_Camera_Initialize()
 {
     Current_Camera_Pos = { Camera_Base_X, Camera_Base_Y, Camera_Base_Z };
     Camera_Front = { 0.0f, 0.0f, 1.0f };
+	Is_Camera_Shaking = false;
 }
 
 void Player_Camera_Finalize()
@@ -97,6 +109,11 @@ void Player_Camera_Update(float elapsed_time)
     XMMATRIX Rot_Matrix = XMMatrixRotationRollPitchYaw(Current_Pitch, Current_Yaw, Current_Roll);
     XMVECTOR Cam_Pos = XMVectorSet(Camera_Base_X, Camera_Base_Y, Camera_Base_Z, 1.0f); // X, Y Must Be "0"
 
+    if (Is_Camera_Shaking)
+    {
+        Do_A_Shake(Cam_Pos, elapsed_time);
+    }
+
     XMVECTOR Up_Vector = XMVector3TransformNormal(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), Rot_Matrix);
     XMVECTOR Forward_Vector = XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), Rot_Matrix);
 
@@ -114,6 +131,14 @@ void Player_Camera_Update(float elapsed_time)
 
     XMStoreFloat4x4(&Camera_Proj_mtx, Proj_Matrix);
     Shader_Manager::GetInstance()->SetProjectionMatrix3D(Proj_Matrix);
+}
+
+void Player_Camera_Shake(float M, float D)
+{
+    Shake_Duration = D;
+    Shake_Initial_Duration = D;
+    Shake_Magnitude = M;
+    Is_Camera_Shaking = true;
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -214,4 +239,31 @@ void GUI_Set_Player_Limits(float limitX, float limitYMin, float limitYMax)
     Player_Limit_X = limitX; 
     Player_Limit_Y_Min = limitYMin; 
     Player_Limit_Y_Max = limitYMax; 
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+//								        	Player Camera Shake Logic
+// ----------------------------------------------------------------------------------------------------------------
+void Do_A_Shake(XMVECTOR& POS, float dt)
+{
+    if (Shake_Duration > 0.0f)
+    {
+        Shake_Duration -= dt;
+
+        if (Shake_Duration <= 0.0f)
+        {
+            Shake_Duration = 0.0f;
+            Is_Camera_Shaking = false;
+        }
+        else
+        {
+            float Current_Mag = Shake_Magnitude * (Shake_Duration / Shake_Initial_Duration);
+
+            float Offset_X = (RandomFloatMinus1To1() * Current_Mag);
+            float Offset_Y = (RandomFloatMinus1To1() * Current_Mag);
+
+            XMVECTOR Shake_Offset = XMVectorSet(Offset_X, Offset_Y, 0.0f, 0.0f);
+            POS += Shake_Offset;
+        }
+    }
 }

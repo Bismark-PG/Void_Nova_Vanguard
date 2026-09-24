@@ -74,8 +74,8 @@ public:
             }
 
             // Dynamic Proportional Navigation Guidance Setting With Ratio
-            Current_Speed = m_Visual_Speed * (1.0f + (Ratio * 2.0f));       // Speed : 1 ~ 3
-            float Dynamic_Turn = m_Turn_Speed * (1.0f + (Ratio * 7.0f));    // Turn  : 1 ~ 8
+            Current_Speed = m_Visual_Speed * (1.0f + (Ratio * m_MAX_SPEED_Z));      // Speed : 1 ~ 2.5
+            float Dynamic_Turn = m_Turn_Speed * (1.0f + (Ratio * m_MAX_SPEED_XY));  // Turn  : 1 ~ 25
 
             // When Missile Is Close Enemy, Set Visual Effect
             if (Current_Distance <= (Current_Speed * Elapsed_Time * 1.5f))
@@ -86,37 +86,21 @@ public:
                 return;
             }
 
-            /*
-            // Get Distance Z Axis Only
-			float Z_Diff = abs(Target_Pos.z - m_Position.z);
-
-            // If Close Enough, Hit Enemy
-            if (Z_Diff <= (m_Visual_Speed * Elapsed_Time * static_cast<float>(Frame_Rate::Three_Frame)))
-            {
-                m_Target->OnDamage(m_Damage);
-				// Need Effect For Hit Enemy
-                Deactivate();
-                return;
-			}
-            */
-
             // Lerp To Target POS
             XMVECTOR V_To_Target = XMVector3Normalize(V_Target_Pos - V_Current_Pos);
             V_Dir = XMVector3Normalize(XMVectorLerp(V_Dir, V_To_Target, m_Turn_Speed * Elapsed_Time));
             XMStoreFloat3(&m_Direction, V_Dir);
         }
+        else
+        {
+            Current_Speed = m_Visual_Speed;
+        }
 
         // Movement Accept
         V_Current_Pos += V_Dir * m_Visual_Speed * Elapsed_Time;
         XMStoreFloat3(&m_Position, V_Current_Pos);
-        
-        // AABB Setting
-        AABB Bullet_AABB = {
-            { m_Position.x + 0.5f, m_Position.y + 0.5f, m_Position.z + 0.5f },
-            { m_Position.x - 0.5f, m_Position.y - 0.5f, m_Position.z - 0.5f }
-        };
 
-        Enemy* Hit_Enemy = Enemy_Manager::GetInstance().Check_Collision_AABB(Bullet_AABB);
+        Enemy* Hit_Enemy = Enemy_Manager::GetInstance().Check_Collision_AABB(GetAABB());
         if (Hit_Enemy != nullptr)
         {
             Hit_Enemy->OnDamage(m_Damage);
@@ -144,5 +128,9 @@ private:
     float m_Turn_Speed = 5.0f;
     bool m_Hit_Enemy = false;
     float m_Initial_Distance = 0.0f;
+
+    // Lerp Speed Limit
+	constexpr static float m_MAX_SPEED_XY = 24.0f;
+    constexpr static float m_MAX_SPEED_Z = 1.5f;
 };
 #endif // BULLET_MISSILE_H

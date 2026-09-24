@@ -21,21 +21,26 @@
 
 using namespace DirectX;
 
-//----------------UI Texture----------------//
-static int Main_BG = -1;
-static int Main_Title = -1;
-static int UI_Start[2] = {-1, -1}, UI_Set[2] = {-1, -1}, UI_Ranking[2] = { -1, -1 },  UI_Exit[2] = { -1, -1 };
+//---------------UI Info---------------//
+struct Main_BG_Data
+{
+	int Tex_BG = -1;
+	int Tex_Title = -1;
+	float BG_W = 0.0f, BG_H = 0.0f;
+	float Title_X = 0.0f, Title_Y = 0.0f, Title_W = 0.0f, Title_H = 0.0f;
+};
 
-//----------------------POS----------------------/
-static float BG_W, BG_H;
-static float Title_X, Title_Y, Title_W, Title_H;
+struct Main_UI_Data
+{
+	int Tex_Wait = -1;
+	int Tex_Glow = -1;
+	float X = 0.0f, Y = 0.0f, W = 0.0f;
+};
 
-static float UI_H;
-
-static float Start_W, Start_X, Start_Y;
-static float Set_W, Set_X, Set_Y;
-static float Rank_W, Rank_X, Rank_Y;
-static float Exit_W, Exit_X, Exit_Y;
+//---------------UI struct Info---------------//
+static Main_BG_Data  BG_Info;
+static Main_UI_Data UI_Start, UI_Set, UI_Rank, UI_Exit;
+static float UI_H = 0.0f;
 
 //----------------State & Data----------------//
 // State Info
@@ -60,6 +65,7 @@ static bool Wait_For_Release = false;
 
 //---------------Private Logic---------------//
 void Main_Menu_Texture();
+void Main_Menu_UI_Initialize();
 
 //-----------------Main Logic-----------------//
 void Main_Menu_Initialize()
@@ -67,41 +73,7 @@ void Main_Menu_Initialize()
 	Main_Menu_Texture();
 	M_INPUT->Set_Mouse_Visible_Mode(false);
 
-	BG_W = static_cast<float>(Direct3D_GetBackBufferWidth());
-	BG_H = static_cast<float>(Direct3D_GetBackBufferHeight());
-
-	Title_H = BG_H * 0.25f;
-	Title_W = Texture_Manager::GetInstance()->Get_Proportional_Width(Main_Title, Title_H);
-	Title_X = BG_W * 0.1f;
-	Title_Y = BG_H * 0.175f;
-
-	UI_H = BG_H * 0.05f;
-	float Base_X = BG_W * 0.85f;
-
-	// Start Menu
-	Start_W = Texture_Manager::GetInstance()->
-		Get_Proportional_Width(UI_Start[static_cast<int>(Menu_State::Wait)], UI_H);
-	Start_X = Base_X - (Start_W * 0.5f);
-	Start_Y = (BG_H * 0.675f) - (UI_H * 0.5f);
-
-	// Setting Menu
-	Set_W = Texture_Manager::GetInstance()->
-		Get_Proportional_Width(UI_Set[static_cast<int>(Menu_State::Wait)], UI_H);
-	Set_X = Base_X - (Set_W * 0.5f);
-	Set_Y = (BG_H * 0.75f) - (UI_H * 0.5f);
-
-	// Ranking Menu
-	Rank_W = Texture_Manager::GetInstance()->
-		Get_Proportional_Width(UI_Ranking[static_cast<int>(Menu_State::Wait)], UI_H);
-	Rank_X = Base_X - (Rank_W * 0.5f);
-	Rank_Y = (BG_H * 0.825f) - (UI_H * 0.5f);
-
-	// Exit Menu
-	Exit_W = Texture_Manager::GetInstance()->
-		Get_Proportional_Width(UI_Exit[static_cast<int>(Menu_State::Wait)], UI_H);
-	Exit_X = Base_X - (Exit_W * 0.5f);
-	Exit_Y = (BG_H * 0.9f) - (UI_H * 0.5f);
-
+	Main_Menu_UI_Initialize();
 	Set_Main_Menu_Buffer(Main_Select_Buffer::None);
 }
 
@@ -122,13 +94,13 @@ void Main_Menu_Update(float elapsed_time)
 		Main_Select_Buffer Target  = Main_Select_Buffer::Wait;
 
 		// Check Menu Rect
-		if (M_INPUT->Is_Mouse_In_Rect(Start_X, Start_Y, Start_W, UI_H))
+		if (M_INPUT->Is_Mouse_In_Rect(UI_Start.X, UI_Start.Y, UI_Start.W, UI_H))
 			Target = Main_Select_Buffer::Start;
-		else if (M_INPUT->Is_Mouse_In_Rect(Set_X, Set_Y, Set_W, UI_H))
+		else if (M_INPUT->Is_Mouse_In_Rect(UI_Set.X, UI_Set.Y, UI_Set.W, UI_H))
 			Target = Main_Select_Buffer::Setting;
-		else if (M_INPUT->Is_Mouse_In_Rect(Rank_X, Rank_Y, Rank_W, UI_H))
+		else if (M_INPUT->Is_Mouse_In_Rect(UI_Rank.X, UI_Rank.Y, UI_Rank.W, UI_H))
 			Target = Main_Select_Buffer::Ranking;
-		else if (M_INPUT->Is_Mouse_In_Rect(Exit_X, Exit_Y, Exit_W, UI_H))
+		else if (M_INPUT->Is_Mouse_In_Rect(UI_Exit.X, UI_Exit.Y, UI_Exit.W, UI_H))
 			Target = Main_Select_Buffer::Exit;
 
 		// If Mouse Moved, Change Buffer
@@ -249,26 +221,23 @@ void Main_Menu_Draw()
 
 void Main_Menu_BG_Draw()
 {
-	Sprite_Draw(Main_BG, A_Zero, A_Zero, BG_W, BG_H);
-	Sprite_Draw(Main_Title, Title_X, Title_Y, Title_W, Title_H);
+	Sprite_Draw(BG_Info.Tex_BG, A_Zero, A_Zero, BG_Info.BG_W, BG_Info.BG_H);
+	Sprite_Draw(BG_Info.Tex_Title, BG_Info.Title_X, BG_Info.Title_Y, BG_Info.Title_W, BG_Info.Title_H);
 }
 
 void Main_Menu_UI_Draw()
 {
-	int State_Wait = static_cast<int>(Menu_State::Wait);
-	int State_Glow = static_cast<int>(Menu_State::Glow);
-
-	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Start) ? UI_Start[State_Glow] : UI_Start[State_Wait],
-		Start_X, Start_Y, Start_W, UI_H, A_Zero);
+	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Start) ? UI_Start.Tex_Glow : UI_Start.Tex_Wait,
+		UI_Start.X, UI_Start.Y, UI_Start.W, UI_H, A_Zero);
 	
-	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Setting) ? UI_Set[State_Glow] : UI_Set[State_Wait],
-		Set_X, Set_Y, Set_W, UI_H, A_Zero);
+	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Setting) ? UI_Set.Tex_Glow : UI_Set.Tex_Wait,
+		UI_Set.X, UI_Set.Y, UI_Set.W, UI_H, A_Zero);
 
-	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Ranking) ? UI_Ranking[State_Glow] : UI_Ranking[State_Wait],
-		Rank_X, Rank_Y, Rank_W, UI_H, A_Zero);
+	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Ranking) ? UI_Rank.Tex_Glow : UI_Rank.Tex_Wait,
+		UI_Rank.X, UI_Rank.Y, UI_Rank.W, UI_H, A_Zero);
 
-	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Exit) ? UI_Exit[State_Glow] : UI_Exit[State_Wait],
-		Exit_X, Exit_Y, Exit_W, UI_H, A_Zero);
+	Sprite_Draw((Get_Main_Menu_Buffer() == Main_Select_Buffer::Exit) ? UI_Exit.Tex_Glow : UI_Exit.Tex_Wait,
+		UI_Exit.X, UI_Exit.Y, UI_Exit.W, UI_H, A_Zero);
 }
 
 Main_Select_Buffer Get_Main_Menu_Buffer()
@@ -286,34 +255,68 @@ bool IF_IS_Game_Done()
 	return EXIT_STATE;
 }
 
+// ----------------------------------------------------------------------------------------------------------------
+//													Private Logic
+// ----------------------------------------------------------------------------------------------------------------
 void Main_Menu_Texture()
 {
-	int State_Wait = static_cast<int>(Menu_State::Wait);
-	int State_Glow = static_cast<int>(Menu_State::Glow);
-
 	//---------------Main Menu Texture---------------//
-	Main_BG		= Texture_Manager::GetInstance()->GetID("K");
-	Main_Title  = Texture_Manager::GetInstance()->GetID("Title");
+	BG_Info.Tex_BG		= Texture_Manager::GetInstance()->GetID("K");
+	BG_Info.Tex_Title	= Texture_Manager::GetInstance()->GetID("Title");
 
-	UI_Start	[State_Wait]	= Texture_Manager::GetInstance()->GetID("Start_N");
-	UI_Set		[State_Wait]	= Texture_Manager::GetInstance()->GetID("Settings_N");
-	UI_Ranking	[State_Wait]	= Texture_Manager::GetInstance()->GetID("Ranking_N");
-	UI_Exit		[State_Wait]	= Texture_Manager::GetInstance()->GetID("Exit_N");
+	UI_Start.Tex_Wait	= Texture_Manager::GetInstance()->GetID("Start_N");
+	UI_Set.Tex_Wait		= Texture_Manager::GetInstance()->GetID("Settings_N");
+	UI_Rank.Tex_Wait	= Texture_Manager::GetInstance()->GetID("Ranking_N");
+	UI_Exit.Tex_Wait	= Texture_Manager::GetInstance()->GetID("Exit_N");
 
-	UI_Start	[State_Glow]	= Texture_Manager::GetInstance()->GetID("Start_G");
-	UI_Set		[State_Glow]	= Texture_Manager::GetInstance()->GetID("Settings_G");
-	UI_Ranking	[State_Glow]	= Texture_Manager::GetInstance()->GetID("Ranking_G");
-	UI_Exit		[State_Glow]	= Texture_Manager::GetInstance()->GetID("Exit_G");
+	UI_Start.Tex_Glow	= Texture_Manager::GetInstance()->GetID("Start_G");
+	UI_Set.Tex_Glow		= Texture_Manager::GetInstance()->GetID("Settings_G");
+	UI_Rank.Tex_Glow	= Texture_Manager::GetInstance()->GetID("Ranking_G");
+	UI_Exit.Tex_Glow	= Texture_Manager::GetInstance()->GetID("Exit_G");
 
-	if (Main_BG == -1 || Main_Title == -1
-		|| UI_Start[State_Wait] == -1 || UI_Set[State_Wait] == -1 || UI_Ranking[State_Wait] == -1 || UI_Exit[State_Wait] == -1
-		|| UI_Start[State_Glow] == -1 || UI_Set[State_Glow] == -1 || UI_Ranking[State_Glow] == -1 || UI_Exit[State_Glow] == -1)
+	if (BG_Info.Tex_BG == -1 || BG_Info.Tex_Title == -1
+		|| UI_Start.Tex_Wait == -1 || UI_Set.Tex_Wait == -1 || UI_Rank.Tex_Wait == -1 || UI_Exit.Tex_Wait == -1
+		|| UI_Start.Tex_Glow == -1 || UI_Set.Tex_Glow == -1 || UI_Rank.Tex_Glow == -1 || UI_Exit.Tex_Glow == -1)
 	{
 		Debug::D_Out << "[Main Menu] Texture Init Error" << std::endl;
-		Debug::D_Out << "\tMain_BG : " << Main_BG 
-			<< "\tMain_Title : " << Main_Title 
-			<< "\tUI_Start : " << UI_Start 
-			<< "\tUI_Set : " << UI_Set 
-			<< "\tUI_Exit : " << UI_Exit << std::endl;
+		Debug::D_Out << "\tMain_BG : "	<< BG_Info.Tex_BG		<< "\tMain_Title : "	<< BG_Info.Tex_Title
+			<< "\tUI_Start_Wait : "		<< UI_Start.Tex_Wait	<< "\tUI_Start_Glow : " << UI_Start.Tex_Glow
+			<< "\tUI_Set_Wait : "		<< UI_Set.Tex_Wait		<< "\tUI_Set_Glow : "	<< UI_Set.Tex_Glow
+			<< "\tUI_Rank_Wait : "		<< UI_Rank.Tex_Wait		<< "\tUI_Rank_Glow : "	<< UI_Rank.Tex_Glow
+			<< "\tUI_Exit_Wait : "		<< UI_Exit.Tex_Wait		<< "\tUI_Exit_Glow : "	<< UI_Exit.Tex_Glow << std::endl;
 	}
+}
+
+void Main_Menu_UI_Initialize()
+{
+	BG_Info.BG_W = static_cast<float>(Direct3D_GetBackBufferWidth());
+	BG_Info.BG_H = static_cast<float>(Direct3D_GetBackBufferHeight());
+
+	BG_Info.Title_H = BG_Info.BG_H * 0.25f;
+	BG_Info.Title_W = Texture_Manager::GetInstance()->Get_Proportional_Width(BG_Info.Tex_Title, BG_Info.Title_H);
+	BG_Info.Title_X = BG_Info.BG_W * 0.1f;
+	BG_Info.Title_Y = BG_Info.BG_H * 0.175f;
+
+	UI_H = BG_Info.BG_H * 0.05f;
+	float Base_X = BG_Info.BG_W * 0.85f;
+
+	// Start Menu
+	UI_Start.W = Texture_Manager::GetInstance()->Get_Proportional_Width(UI_Start.Tex_Wait, UI_H);
+	UI_Start.X = Base_X - (UI_Start.W * 0.5f);
+	UI_Start.Y = (BG_Info.BG_H * 0.675f) - (UI_H * 0.5f);
+
+	// Setting Menu
+	UI_Set.W = Texture_Manager::GetInstance()->Get_Proportional_Width(UI_Set.Tex_Wait, UI_H);
+	UI_Set.X = Base_X - (UI_Set.W * 0.5f);
+	UI_Set.Y = (BG_Info.BG_H * 0.75f) - (UI_H * 0.5f);
+
+	// Ranking Menu
+	UI_Rank.W = Texture_Manager::GetInstance()->Get_Proportional_Width(UI_Rank.Tex_Wait, UI_H);
+	UI_Rank.X = Base_X - (UI_Rank.W * 0.5f);
+	UI_Rank.Y = (BG_Info.BG_H * 0.825f) - (UI_H * 0.5f);
+
+	// Exit Menu
+	UI_Exit.W = Texture_Manager::GetInstance()->Get_Proportional_Width(UI_Exit.Tex_Wait, UI_H);
+	UI_Exit.X = Base_X - (UI_Exit.W * 0.5f);
+	UI_Exit.Y = (BG_Info.BG_H * 0.9f) - (UI_H * 0.5f);
 }

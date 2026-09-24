@@ -74,6 +74,21 @@ void System_Manager::Update(double elapsed_time, bool IS_Controller_Set)
 	// When Controller Is Not Set, Update Main Logic (Player, Enemy, etc.)
 	if (!IS_Controller_Set)
 	{
+		static bool IS_DEBUG_MODE = false;
+		if (KeyLogger_IsTrigger(KK_F1))
+		{
+			IS_DEBUG_MODE = !IS_DEBUG_MODE;
+		}
+
+		if (IS_DEBUG_MODE)
+		{
+			Debug_Camera_Update(elapsed_time);
+		}
+		else
+		{
+			Game_Logic_Update(elapsed_time);
+		}
+/*
 #if defined(DEBUG) || defined(_DEBUG)
 		static bool IS_DEBUG_MODE = false;
 		if (KeyLogger_IsTrigger(KK_F1))
@@ -93,6 +108,7 @@ void System_Manager::Update(double elapsed_time, bool IS_Controller_Set)
 		// Update Main Logic For Release
 		Game_Logic_Update(elapsed_time);
 #endif
+*/
 	}
 }
 
@@ -111,23 +127,13 @@ void System_Manager::Draw(double FPS)
 	// Fade Draw
 	Fade_Draw();
 
+	Draw_GUI_Editor(FPS);
+/*
 #if defined(DEBUG) || defined(_DEBUG)
 	// Draw GUI
-	// Start the Dear ImGui frame
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-	ImGui::GetIO().MouseDrawCursor = true;
-
-	// Game Scene Editor
-	GUI_Screen_Scene_Editor(FPS);
-
-	// Player, Camera Editor
-	GUI_Player_Editor();
-
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	Draw_GUI_Editor(FPS);
 #endif	
+*/
 
 	Direct3D_Present();
 }

@@ -73,11 +73,11 @@ void Enemy::OnDamage(int damage)
 
 	if (m_HP <= 0)
 	{
-		OnHit();
+		Destroy();
 	}
 }
 
-void Enemy::OnHit()
+void Enemy::Destroy()
 {
 	// Audio_Manager::GetInstance()->Play_SFX("Enemy_Dead");
 

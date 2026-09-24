@@ -16,6 +16,8 @@ void Player_Camera_Finalize();
 void Player_Camera_Reset();
 void Player_Camera_Update(float elapsed_time);
 
+void Player_Camera_Shake(float M, float D);
+
 void Set_Mouse_Sensitivity(float Sensitivity);
 float Get_Mouse_Sensitivity();
 

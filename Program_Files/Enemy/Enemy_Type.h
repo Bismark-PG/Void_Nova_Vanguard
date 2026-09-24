@@ -51,17 +51,12 @@ static const Enemy_Info Enemy_Normal_Info
 
 inline const Enemy_Info& Get_Enemy_Info(EnemyType type)
 {
-	Enemy_Info Info;
-
 	switch (type)
 	{
 	case EnemyType::ENEMY_NORMAL: 
-		Info = Enemy_Normal_Info;
-		break;
+		return Enemy_Normal_Info;
 		// Need More Enemy Type
 	}
-
-	return Info;
 }
 
 #endif // ENEMY_TYPE_H

@@ -32,7 +32,7 @@ public:
 
 	// --- System ---
 	virtual void OnDamage(int damage);
-	virtual void OnHit();
+	virtual void Destroy();
 	bool IsDead() const { return m_HP <= 0; }
 	AABB GetAABB() const;
 

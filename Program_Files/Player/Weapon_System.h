@@ -54,6 +54,15 @@ private:
 	static std::vector<LockOn_Data> Locked_Targets;
 	static constexpr size_t MAX_LOCK_ON = 8;
 
+	constexpr static float LOCK_ON_MAX_RADIUS		 = 4.0f;
+	constexpr static float MISSILE_DAMAGE_MULTIPLIER = 3.0f;
+
+	constexpr static float COOLDOWN_MACHINE_GUN = 0.1f;
+	constexpr static float COOLDOWN_MISSILE		= 3.0f;
+
+	constexpr static float ENERGY_AMOUNT_MACHINE_GUN = 0.25f;
+	constexpr static float ENERGY_AMOUNT_MISSILE	 = 2.0f;
+
 	float Random_X_Ratio = 2.0f;
 	float Random_Y_Range_MIN = 0.5f;
 	float Random_Y_Range_MAX = 2.0f;

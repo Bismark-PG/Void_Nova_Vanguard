@@ -1,13 +1,12 @@
 /*==============================================================================
     
-    Define Enemy Spawn Waves [Wave_Data.h]
+    Define Enemy Pattern Data [Pattern_Data.h]
     
     Author : Choi HyungJoon
 
 ==============================================================================*/
 #ifndef PATTERN_DATA_H
 #define PATTERN_DATA_H
-
 #include <vector>
 #include <unordered_map>
 #include "Enemy_Type.h"

@@ -21,39 +21,31 @@
 using namespace DirectX;
 using namespace PALETTE;
 
-//----------------UI Texture----------------//
-static int Setting_BG = -1;
+//---------------UI Info---------------//
+struct Setting_UI_Data
+{
+	int Tex_ID = -1;
+	float X = 0.0f, Y = 0.0f, W = 0.0f, H = 0.0f;
+};
 
-static int UI_BGM = -1;
-static int UI_SFX = -1;
-static int UI_WinMode = -1;
-static int UI_FullMode = -1;
-static int UI_Back = -1;
+struct Setting_Edit_UI_Data
+{
+	float Num_X = 0.0f, Num_Y = 0.0f;
+	float Arrow_L_X = 0.0f, Arrow_R_X = 0.0f;
+};
 
-static int UI_Num[11];
-static int UI_Arrow_L = -1;
-static int UI_Arrow_R = -1;
+struct Setting_Number_UI_Data
+{
+	int Tex_Num_ID[11] = {};
+	int Tex_Arrow_L_ID = -1, Tex_Arrow_R_ID = -1;
+	float W = 0.0f, H = 0.0f;
+};
 
-//----------------------POS----------------------//
-static float ScreenW = 0.0f;
-static float ScreenH = 0.0f;
-
-static float Panel_X = 0.0f, Panel_Y = 0.0f;
-static float Panel_W = 0.0f, Panel_H = 0.0f;
-
-static float Sound_Menu_W = 0.0f, Mode_Menu_W = 0.0f, Menu_H = 0.0f;
-
-static float BGM_X = 0.0f, BGM_Y = 0.0f;
-static float SFX_X = 0.0f, SFX_Y = 0.0f;
-static float Win_X = 0.0f, Win_Y = 0.0f;
-static float Full_X = 0.0f, Full_Y = 0.0f;
-static float Back_X = 0.0f, Back_Y = 0.0f;
-
-static float Num_W = 0.0f, Num_H = 0.0f;
-static float BGM_Num_X = 0.0f, BGM_Num_Y = 0.0f;
-static float SFX_Num_X = 0.0f, SFX_Num_Y = 0.0f;
-static float BGM_L_X = 0.0f, BGM_R_X = 0.0f;
-static float SFX_L_X = 0.0f, SFX_R_X = 0.0f;
+//---------------UI struct Info---------------//
+static Setting_UI_Data BG_Panel, UI_BGM, UI_SFX, UI_WinMode, UI_FullMode, UI_Back;
+static Setting_Edit_UI_Data Edit_BGM, Edit_SFX;
+static Setting_Number_UI_Data UI_Num;
+static float UI_Mode_W, UI_Sound_W, UI_H = 0.0f;
 
 //----------------State & Data----------------//
 static Setting_Select_Buffer S_Buffer = Setting_Select_Buffer::None;
@@ -64,6 +56,7 @@ static int SFX_Volume = 5;
 
 //---------------Private Logic---------------//
 void Setting_Texture();
+void Setting_UI_Initialize();
 void Draw_Menu();
 void Draw_Edit_Menu();
 
@@ -71,68 +64,13 @@ void Draw_Edit_Menu();
 void Setting_Initialize()
 {
 	Setting_Texture();
+	Setting_UI_Initialize();
 
-	ScreenW = static_cast<float>(Direct3D_GetBackBufferWidth());
-	ScreenH = static_cast<float>(Direct3D_GetBackBufferHeight());
-
-	// 1. Panel
-	Panel_W = ScreenW * A_Point_Nine;
-	Panel_H = ScreenH * A_Point_Nine;
-	Panel_X = ScreenW * A_Half - Panel_W * A_Half;
-	Panel_Y = ScreenH * A_Half - Panel_H * A_Half;
-
-	// 2. Menu Text
-	Mode_Menu_W = Panel_W * A_Point_Three;
-	Sound_Menu_W = Mode_Menu_W * A_Half;
-	Menu_H = Panel_H * A_One_Tenth;
-
-	// 3. X Ratio
-	float Sound_Base_X	= (Panel_X + (Panel_W * A_Point_Three)) - (Sound_Menu_W * A_Half);
-	float Mobe_Base_X	= (Panel_X + (Panel_W * A_Point_Three)) - (Mode_Menu_W * A_Half);
-	float Back_Base_X	= Panel_X + (Panel_W * A_Half) - (Sound_Menu_W * A_Half);
-	float Menu_Half		= Menu_H * A_Half;
-
-	// 4. Menu POS
-	BGM_X	= Sound_Base_X;
-	BGM_Y	= Panel_Y + (Panel_H * A_Fifth) - Menu_Half;
-
-	SFX_X	= Sound_Base_X;
-	SFX_Y	= Panel_Y + (Panel_H * A_P_Three_Five) - Menu_Half;
-
-	Win_X	= Mobe_Base_X;
-	Win_Y	= Panel_Y + (Panel_H * A_Half) - Menu_Half;
-
-	Full_X	= Mobe_Base_X;
-	Full_Y	= Panel_Y + (Panel_H * A_Six_Five) - Menu_Half;
-
-	Back_X	= Back_Base_X;
-	Back_Y	= Panel_Y + (Panel_H * A_P_Eight_Five) - Menu_Half;
-
-	// 5. Number Size, POS
-	Num_W	= Sound_Menu_W * A_P_Three_Five;
-	Num_H	= Menu_H * A_P_Eight_Five;
-
-	float Num_Base_X = (Panel_X + (Panel_W * A_Point_Seven)) - (Num_W * A_Half);
-	float Num_Y_Offset = (Num_H - Menu_H) * A_Half;
-
-	BGM_Num_X = Num_Base_X;
-	BGM_Num_Y = BGM_Y - Num_Y_Offset;
-
-	SFX_Num_X = Num_Base_X;
-	SFX_Num_Y = SFX_Y - Num_Y_Offset;
-
-	// 6. Arrow POS
-	float Arrow_Gap = Num_W * A_One_A_Quarter;
-	BGM_L_X = BGM_Num_X - Arrow_Gap;
-	BGM_R_X = BGM_Num_X + Arrow_Gap;
-	SFX_L_X = SFX_Num_X - Arrow_Gap;
-	SFX_R_X = SFX_Num_X + Arrow_Gap;
-
-	// 7. Get Volume Info
+	// Get Volume Info
 	BGM_Volume = static_cast<int>(Audio_Manager::GetInstance()->Get_Target_BGM_Volume() * 10.0f);
 	SFX_Volume = static_cast<int>(Audio_Manager::GetInstance()->Get_Target_SFX_Volume() * 10.0f);
 
-	// 8. Reset Buffer & State
+	// Reset Buffer & State
 	S_Buffer = Setting_Select_Buffer::None;
 	E_State = Setting_Edit_State::None;
 }
@@ -169,9 +107,9 @@ void Setting_Update(float elapsed_time)
 	{
 		bool Is_BGM = (E_State == Setting_Edit_State::BGM);
 		int& Current_Vol = Is_BGM ? BGM_Volume : SFX_Volume;
-		float L_X = Is_BGM ? BGM_L_X : SFX_L_X;
-		float R_X = Is_BGM ? BGM_R_X : SFX_R_X;
-		float Y_Pos = Is_BGM ? BGM_Num_Y : SFX_Num_Y;
+		float L_X = Is_BGM ? Edit_BGM.Arrow_L_X : Edit_SFX.Arrow_L_X;
+		float R_X = Is_BGM ? Edit_BGM.Arrow_R_X : Edit_SFX.Arrow_R_X;
+		float Y_Pos = Is_BGM ? Edit_BGM.Num_Y : Edit_SFX.Num_Y;
 
 		bool Vol_Changed = false;
 		bool Exit_Edit = Cancel_Key;
@@ -198,12 +136,12 @@ void Setting_Update(float elapsed_time)
 		// Mouse Input Logic for Volume Change
 		if (L_Click)
 		{
-			if (M_INPUT->Is_Mouse_In_Rect(L_X, Y_Pos, Num_W, Num_H))
+			if (M_INPUT->Is_Mouse_In_Rect(L_X, Y_Pos, UI_Num.W, UI_Num.H))
 			{
 				Current_Vol--;
 				Vol_Changed = true;
 			}
-			else if (M_INPUT->Is_Mouse_In_Rect(R_X, Y_Pos, Num_W, Num_H))
+			else if (M_INPUT->Is_Mouse_In_Rect(R_X, Y_Pos, UI_Num.W, UI_Num.H))
 			{
 				Current_Vol++;
 				Vol_Changed = true;
@@ -246,15 +184,15 @@ void Setting_Update(float elapsed_time)
 			Setting_Select_Buffer Target = Setting_Select_Buffer::Wait;
 
 			// Check Menu Rect
-			if (M_INPUT->Is_Mouse_In_Rect(BGM_X, BGM_Y, Sound_Menu_W, Menu_H))
+			if (M_INPUT->Is_Mouse_In_Rect(UI_BGM.X, UI_BGM.Y, UI_Sound_W, UI_H))
 				Target = Setting_Select_Buffer::BGM;
-			else if (M_INPUT->Is_Mouse_In_Rect(SFX_X, SFX_Y, Sound_Menu_W, Menu_H))
+			else if (M_INPUT->Is_Mouse_In_Rect(UI_SFX.X, UI_SFX.Y, UI_Sound_W, UI_H))
 				Target = Setting_Select_Buffer::SFX;
-			else if (M_INPUT->Is_Mouse_In_Rect(Win_X, Win_Y, Mode_Menu_W, Menu_H))
+			else if (M_INPUT->Is_Mouse_In_Rect(UI_WinMode.X, UI_WinMode.Y, UI_Mode_W, UI_H))
 				Target = Setting_Select_Buffer::WinMode;
-			else if (M_INPUT->Is_Mouse_In_Rect(Full_X, Full_Y, Mode_Menu_W, Menu_H))
+			else if (M_INPUT->Is_Mouse_In_Rect(UI_FullMode.X, UI_FullMode.Y, UI_Mode_W, UI_H))
 				Target = Setting_Select_Buffer::FullMode;
-			else if (M_INPUT->Is_Mouse_In_Rect(Back_X, Back_Y, Sound_Menu_W, Menu_H))
+			else if (M_INPUT->Is_Mouse_In_Rect(UI_Back.X, UI_Back.Y, UI_Sound_W, UI_H))
 				Target = Setting_Select_Buffer::Back;
 
 			// If Mouse Moved, Change Buffer
@@ -381,10 +319,10 @@ void Setting_Draw()
 	Direct3D_SetDepthEnable(false);
 	Shader_Manager::GetInstance()->Begin2D();
 
-	if (Setting_BG == -1)	return;
+	if (BG_Panel.Tex_ID == -1)	return;
 
 	// Draw BG Panel
-	Sprite_Draw(Setting_BG, Panel_X, Panel_Y, Panel_W, Panel_H);
+	Sprite_Draw(BG_Panel.Tex_ID, BG_Panel.X, BG_Panel.Y, BG_Panel.W, BG_Panel.H);
 
 	// Draw Menu
 	Draw_Menu();
@@ -417,72 +355,133 @@ bool Is_Setting_Edit_Active()
 	return E_State != Setting_Edit_State::None;
 }
 
-//---------------Private Logic---------------//
+// ----------------------------------------------------------------------------------------------------------------
+//													Private Logic
+// ----------------------------------------------------------------------------------------------------------------
 void Setting_Texture()
 {
 	//------------------BG Texture------------------//
-	Setting_BG	= Texture_Manager::GetInstance()->GetID("Panel_BG");
+	BG_Panel.Tex_ID	= Texture_Manager::GetInstance()->GetID("Panel_BG");
 
 	//------------------Menu Texture------------------//
-	UI_BGM		= Texture_Manager::GetInstance()->GetID("Setting_BGM");
-	UI_SFX		= Texture_Manager::GetInstance()->GetID("Setting_SFX");
-	UI_WinMode	= Texture_Manager::GetInstance()->GetID("Setting_Win");
-	UI_FullMode = Texture_Manager::GetInstance()->GetID("Setting_Full");
-	UI_Back		= Texture_Manager::GetInstance()->GetID("Setting_Done");
+	UI_BGM.Tex_ID		= Texture_Manager::GetInstance()->GetID("Setting_BGM");
+	UI_SFX.Tex_ID		= Texture_Manager::GetInstance()->GetID("Setting_SFX");
+	UI_WinMode.Tex_ID	= Texture_Manager::GetInstance()->GetID("Setting_Win");
+	UI_FullMode.Tex_ID	= Texture_Manager::GetInstance()->GetID("Setting_Full");
+	UI_Back.Tex_ID		= Texture_Manager::GetInstance()->GetID("Setting_Done");
 
 	//------------------Number Texture------------------//
-	UI_Num[0]	= Texture_Manager::GetInstance()->GetID("UI_Num_MIN");
-	UI_Num[1]	= Texture_Manager::GetInstance()->GetID("UI_Num_1");
-	UI_Num[2]	= Texture_Manager::GetInstance()->GetID("UI_Num_2");
-	UI_Num[3]	= Texture_Manager::GetInstance()->GetID("UI_Num_3");
-	UI_Num[4]	= Texture_Manager::GetInstance()->GetID("UI_Num_4");
-	UI_Num[5]	= Texture_Manager::GetInstance()->GetID("UI_Num_5");
-	UI_Num[6]	= Texture_Manager::GetInstance()->GetID("UI_Num_6");
-	UI_Num[7]	= Texture_Manager::GetInstance()->GetID("UI_Num_7");
-	UI_Num[8]	= Texture_Manager::GetInstance()->GetID("UI_Num_8");
-	UI_Num[9]	= Texture_Manager::GetInstance()->GetID("UI_Num_9");
-	UI_Num[10]	= Texture_Manager::GetInstance()->GetID("UI_Num_MAX");
+	UI_Num.Tex_Num_ID[0]	= Texture_Manager::GetInstance()->GetID("UI_Num_MIN");
+	UI_Num.Tex_Num_ID[1]	= Texture_Manager::GetInstance()->GetID("UI_Num_1");
+	UI_Num.Tex_Num_ID[2]	= Texture_Manager::GetInstance()->GetID("UI_Num_2");
+	UI_Num.Tex_Num_ID[3]	= Texture_Manager::GetInstance()->GetID("UI_Num_3");
+	UI_Num.Tex_Num_ID[4]	= Texture_Manager::GetInstance()->GetID("UI_Num_4");
+	UI_Num.Tex_Num_ID[5]	= Texture_Manager::GetInstance()->GetID("UI_Num_5");
+	UI_Num.Tex_Num_ID[6]	= Texture_Manager::GetInstance()->GetID("UI_Num_6");
+	UI_Num.Tex_Num_ID[7]	= Texture_Manager::GetInstance()->GetID("UI_Num_7");
+	UI_Num.Tex_Num_ID[8]	= Texture_Manager::GetInstance()->GetID("UI_Num_8");
+	UI_Num.Tex_Num_ID[9]	= Texture_Manager::GetInstance()->GetID("UI_Num_9");
+	UI_Num.Tex_Num_ID[10]	= Texture_Manager::GetInstance()->GetID("UI_Num_MAX");
 
-	UI_Arrow_L	= Texture_Manager::GetInstance()->GetID("UI_Num_Button_L");
-	UI_Arrow_R	= Texture_Manager::GetInstance()->GetID("UI_Num_Button_R");
+	UI_Num.Tex_Arrow_L_ID	= Texture_Manager::GetInstance()->GetID("UI_Num_Button_L");
+	UI_Num.Tex_Arrow_R_ID = Texture_Manager::GetInstance()->GetID("UI_Num_Button_R");
 
-	if (Setting_BG == -1 || UI_BGM == -1 || UI_SFX == -1 || UI_WinMode == -1 || UI_FullMode == -1 || UI_Back == -1 ||
-		UI_Num[0] == -1 || UI_Num[1] == -1 || UI_Num[2] == -1 || UI_Num[3] == -1 || UI_Num[4] == -1 || UI_Num[5] == -1 ||
-		UI_Num[6] == -1 || UI_Num[7] == -1 || UI_Num[8] == -1 || UI_Num[9] == -1 || UI_Num[10] == -1 ||
-		UI_Arrow_L == -1 || UI_Arrow_R == -1)
+	if (BG_Panel.Tex_ID == -1 || UI_BGM.Tex_ID == -1 || UI_SFX.Tex_ID == -1 ||
+		UI_WinMode.Tex_ID == -1 || UI_FullMode.Tex_ID == -1 || UI_Back.Tex_ID == -1 ||
+		UI_Num.Tex_Arrow_L_ID == -1 || UI_Num.Tex_Arrow_R_ID == -1)
 	{
 		Debug::D_Out << "[Setting] Texture Init Error" << std::endl;
-		Debug::D_Out << "Setting_BG : "	<<	Setting_BG	<<	"\tUI_BGM : "	<< UI_BGM <<
-			"\tUI_SFX : "			<< UI_SFX		<<	"\tUI_WinMode : "	<< UI_WinMode <<
-			"\tUI_FullMode : "		<< UI_FullMode	<<	"\tUI_Back : "		<< UI_Back <<
-			"\tUI_Arrow_L : "		<< UI_Arrow_L	<<	"\tUI_Arrow_R : "	<< UI_Arrow_R << std::endl;
+		Debug::D_Out << "BG_Panel : "	<<	BG_Panel.Tex_ID			<<	"\tUI_BGM : "		<< UI_BGM.Tex_ID <<
+			"\tUI_SFX : "				<< UI_SFX.Tex_ID			<<	"\tUI_WinMode : "	<< UI_WinMode.Tex_ID <<
+			"\tUI_FullMode : "			<< UI_FullMode.Tex_ID		<< "\tUI_Back : "		<< UI_Back.Tex_ID <<
+			"\tUI_Arrow_L : "			<< UI_Num.Tex_Arrow_L_ID	<< "\tUI_Arrow_R : "	<< UI_Num.Tex_Arrow_R_ID << std::endl;\
 
-		if (UI_Num[0] == -1 || UI_Num[1] == -1 || UI_Num[2] == -1 || UI_Num[3] == -1 || UI_Num[4] == -1 || UI_Num[5] == -1 ||
-			UI_Num[6] == -1 || UI_Num[7] == -1 || UI_Num[8] == -1 || UI_Num[9] == -1 || UI_Num[10] == -1)
+		if (UI_Num.Tex_Num_ID[0] == -1 || UI_Num.Tex_Num_ID[1] == -1 || UI_Num.Tex_Num_ID[2] == -1 || UI_Num.Tex_Num_ID[3] == -1 || 
+			UI_Num.Tex_Num_ID[4] == -1 || UI_Num.Tex_Num_ID[5] == -1 || UI_Num.Tex_Num_ID[6] == -1 || UI_Num.Tex_Num_ID[7] == -1 ||
+			UI_Num.Tex_Num_ID[8] == -1 || UI_Num.Tex_Num_ID[9] == -1 || UI_Num.Tex_Num_ID[10] == -1)
 		{
 			for (int i = 0; i < 11; ++i)
 			{
-				Debug::D_Out << "UI_Num[" << i << "] : " << UI_Num[i] << "\t" << std::endl;
+				Debug::D_Out << "UI_Num[" << i << "] : " << UI_Num.Tex_Num_ID[i] << "\t" << std::endl;
 			}
 		}
 	}
 }
 
+void Setting_UI_Initialize()
+{
+	float ScreenW = static_cast<float>(Direct3D_GetBackBufferWidth());
+	float ScreenH = static_cast<float>(Direct3D_GetBackBufferHeight());
+
+	// 1. Panel
+	BG_Panel.W = ScreenW * A_Point_Nine;
+	BG_Panel.H = ScreenH * A_Point_Nine;
+	BG_Panel.X = ScreenW * A_Half - BG_Panel.W * A_Half;
+	BG_Panel.Y = ScreenH * A_Half - BG_Panel.H * A_Half;
+
+	// 2. Menu Text
+	UI_Mode_W = BG_Panel.W * A_Point_Three;
+	UI_Sound_W = UI_Mode_W * A_Half;
+	UI_H = BG_Panel.H * A_One_Tenth;
+
+	// 3. X Ratio
+	float Sound_Base_X = (BG_Panel.X + (BG_Panel.W * A_Point_Three)) - (UI_Sound_W * A_Half);
+	float Mobe_Base_X = (BG_Panel.X + (BG_Panel.W * A_Point_Three)) - (UI_Mode_W * A_Half);
+	float Back_Base_X = BG_Panel.X + (BG_Panel.W * A_Half) - (UI_Sound_W * A_Half);
+	float Menu_Half = UI_H * A_Half;
+
+	// 4. Menu POS
+	UI_BGM.X = Sound_Base_X;
+	UI_BGM.Y = BG_Panel.Y + (BG_Panel.H * A_Fifth) - Menu_Half;
+
+	UI_SFX.X = Sound_Base_X;
+	UI_SFX.Y = BG_Panel.Y + (BG_Panel.H * A_P_Three_Five) - Menu_Half;
+
+	UI_WinMode.X = Mobe_Base_X;
+	UI_WinMode.Y = BG_Panel.Y + (BG_Panel.H * A_Half) - Menu_Half;
+
+	UI_FullMode.X = Mobe_Base_X;
+	UI_FullMode.Y = BG_Panel.Y + (BG_Panel.H * A_Six_Five) - Menu_Half;
+
+	UI_Back.X = Back_Base_X;
+	UI_Back.Y = BG_Panel.Y + (BG_Panel.H * A_P_Eight_Five) - Menu_Half;
+
+	// 5. Number Size, POS
+	UI_Num.W = UI_Sound_W * A_P_Three_Five;
+	UI_Num.H = UI_H * A_P_Eight_Five;
+
+	float Num_Base_X = (BG_Panel.X + (BG_Panel.W * A_Point_Seven)) - (UI_Num.W * A_Half);
+	float Num_Y_Offset = (UI_Num.H - UI_H) * A_Half;
+
+	Edit_BGM.Num_X = Num_Base_X;
+	Edit_BGM.Num_Y = UI_BGM.Y - Num_Y_Offset;
+
+	Edit_SFX.Num_X = Num_Base_X;
+	Edit_SFX.Num_Y = UI_SFX.Y - Num_Y_Offset;
+
+	// 6. Arrow POS
+	float Arrow_Gap = UI_Num.W * A_One_A_Quarter;
+	Edit_BGM.Arrow_L_X = Edit_BGM.Num_X - Arrow_Gap;
+	Edit_BGM.Arrow_R_X = Edit_BGM.Num_X + Arrow_Gap;
+	Edit_SFX.Arrow_L_X = Edit_SFX.Num_X - Arrow_Gap;
+	Edit_SFX.Arrow_R_X = Edit_SFX.Num_X + Arrow_Gap;
+}
+
 void Draw_Menu()
 {
-	Sprite_Draw(UI_BGM, BGM_X, BGM_Y, Sound_Menu_W, Menu_H, A_Zero,
+	Sprite_Draw(UI_BGM.Tex_ID, UI_BGM.X, UI_BGM.Y, UI_Sound_W, UI_H, A_Zero,
 		(Get_Setting_Menu_Buffer() == Setting_Select_Buffer::BGM) ? Alpha_Origin : Alpha_Half);
 
-	Sprite_Draw(UI_SFX, SFX_X, SFX_Y, Sound_Menu_W, Menu_H, A_Zero,
+	Sprite_Draw(UI_SFX.Tex_ID, UI_SFX.X, UI_SFX.Y, UI_Sound_W, UI_H, A_Zero,
 		(Get_Setting_Menu_Buffer() == Setting_Select_Buffer::SFX) ? Alpha_Origin : Alpha_Half);
 
-	Sprite_Draw(UI_WinMode, Win_X, Win_Y, Mode_Menu_W, Menu_H, A_Zero,
+	Sprite_Draw(UI_WinMode.Tex_ID, UI_WinMode.X, UI_WinMode.Y, UI_Mode_W, UI_H, A_Zero,
 		(Get_Setting_Menu_Buffer() == Setting_Select_Buffer::WinMode) ? Alpha_Origin : Alpha_Half);
 
-	Sprite_Draw(UI_FullMode, Full_X, Full_Y, Mode_Menu_W, Menu_H, A_Zero,
+	Sprite_Draw(UI_FullMode.Tex_ID, UI_FullMode.X, UI_FullMode.Y, UI_Mode_W, UI_H, A_Zero,
 		(Get_Setting_Menu_Buffer() == Setting_Select_Buffer::FullMode) ? Alpha_Origin : Alpha_Half);
 
-	Sprite_Draw(UI_Back, Back_X, Back_Y, Sound_Menu_W, Menu_H, A_Zero,
+	Sprite_Draw(UI_Back.Tex_ID, UI_Back.X, UI_Back.Y, UI_Sound_W, UI_H, A_Zero,
 		(Get_Setting_Menu_Buffer() == Setting_Select_Buffer::Back) ? Alpha_Origin : Alpha_Half);
 }
 
@@ -491,24 +490,24 @@ void Draw_Edit_Menu()
 	XMFLOAT4 BGM_Alpha = (Get_Setting_Menu_Buffer() == Setting_Select_Buffer::BGM) ? Alpha_Origin : Alpha_Half;
 	XMFLOAT4 SFX_Alpha = (Get_Setting_Menu_Buffer() == Setting_Select_Buffer::SFX) ? Alpha_Origin : Alpha_Half;
 
-	Sprite_Draw(UI_Num[BGM_Volume], BGM_Num_X, BGM_Num_Y, Num_W, Num_H, A_Zero, BGM_Alpha);
-	Sprite_Draw(UI_Num[SFX_Volume], SFX_Num_X, SFX_Num_Y, Num_W, Num_H, A_Zero, SFX_Alpha);
+	Sprite_Draw(UI_Num.Tex_Num_ID[BGM_Volume], Edit_BGM.Num_X, Edit_BGM.Num_Y, UI_Num.W, UI_Num.H, A_Zero, BGM_Alpha);
+	Sprite_Draw(UI_Num.Tex_Num_ID[SFX_Volume], Edit_SFX.Num_X, Edit_SFX.Num_Y, UI_Num.W, UI_Num.H, A_Zero, SFX_Alpha);
 
 	// If Edit State Is Active, Draw Arrow
 	if (E_State == Setting_Edit_State::BGM)
 	{
 		if (BGM_Volume > 0)
-			Sprite_Draw(UI_Arrow_L, BGM_L_X, BGM_Num_Y, Num_W, Num_H, A_Zero, Alpha_Origin);
+			Sprite_Draw(UI_Num.Tex_Arrow_L_ID, Edit_BGM.Arrow_L_X, Edit_BGM.Num_Y, UI_Num.W, UI_Num.H, A_Zero, Alpha_Origin);
 
 		if (BGM_Volume < 10)
-			Sprite_Draw(UI_Arrow_R, BGM_R_X, BGM_Num_Y, Num_W, Num_H, A_Zero, Alpha_Origin);
+			Sprite_Draw(UI_Num.Tex_Arrow_R_ID, Edit_BGM.Arrow_R_X, Edit_BGM.Num_Y, UI_Num.W, UI_Num.H, A_Zero, Alpha_Origin);
 	}
 	else if (E_State == Setting_Edit_State::SFX)
 	{
 		if (SFX_Volume > 0)
-			Sprite_Draw(UI_Arrow_L, SFX_L_X, SFX_Num_Y, Num_W, Num_H, A_Zero, Alpha_Origin);
+			Sprite_Draw(UI_Num.Tex_Arrow_L_ID, Edit_SFX.Arrow_L_X, Edit_SFX.Num_Y, UI_Num.W, UI_Num.H, A_Zero, Alpha_Origin);
 
 		if (SFX_Volume < 10)
-			Sprite_Draw(UI_Arrow_R, SFX_R_X, SFX_Num_Y, Num_W, Num_H, A_Zero, Alpha_Origin);
+			Sprite_Draw(UI_Num.Tex_Arrow_R_ID, Edit_SFX.Arrow_R_X, Edit_SFX.Num_Y, UI_Num.W, UI_Num.H, A_Zero, Alpha_Origin);
 	}
 }

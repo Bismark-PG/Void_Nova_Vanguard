@@ -10,6 +10,8 @@
 #include "Collision.h"
 #include "Weapon_System.h"
 
+enum class EnergyState;
+
 void Player_Initialize();
 void Player_Finalize();
 
@@ -33,6 +35,12 @@ AABB Player_Get_AABB();
 // --- Combat System ---
 void Player_Change_Overload_Count(bool is_increase);
 int Player_Get_Overload_Count();
+
+// --- Energy System ---
+float Player_Get_Energy();
+float Player_Get_Max_Energy();
+EnergyState Player_Get_Energy_State();
+bool Player_Consume_Energy(float amount);
 
 // --- Debug Function  ---
 void GUI_Set_Player_POS(float x, float y, float z);

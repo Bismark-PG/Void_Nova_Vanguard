@@ -9,6 +9,7 @@
 #define BULLET_H
 #include <DirectXMath.h>
 #include "Collision.h"
+#include "debug_ostream.h"
 
 // Bullet Type
 enum class BulletType
@@ -57,6 +58,15 @@ public:
     virtual void Update(float Elapsed_Time) = 0;
     virtual void Draw() = 0;
 
+    virtual AABB GetAABB() const
+    {
+        return AABB
+        {
+            { m_Position.x + m_Radius, m_Position.y + m_Radius, m_Position.z + m_Radius }, // Max
+            { m_Position.x - m_Radius, m_Position.y - m_Radius, m_Position.z - m_Radius }  // Min
+        };
+    }
+
 protected:
     bool m_IsActive = false;
 
@@ -71,5 +81,6 @@ protected:
     float m_Visual_Speed = 0.0f;
     float m_Alive_Timer = 0.0f;
     float m_Destroy_Z_Axis = -10.0f;
+    float m_Radius = 0.5f;
 };
 #endif // BULLET_H
